@@ -26,6 +26,10 @@ def get_db():
     finally:
         db.close()
 
+def init_db():
+    import models
+    Base.metadata.create_all(bind=engine)
+
 def verify_db_connection():
     logger = logging.getLogger(__name__)
     try:

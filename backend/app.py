@@ -1,7 +1,9 @@
 import logging
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from contextlib import asynccontextmanager
-from database import verify_db_connection
+from database import verify_db_connection, init_db, get_db
+from models import Customer
+from sqlalchemy.orm import Session
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -14,6 +16,10 @@ async def lifespan(app: FastAPI):
     is_connected = verify_db_connection()
     if not is_connected:
         logger.warning("Database connection failed, but the application will continue starting.")
+    else:
+        logger.info("Initializing database tables...")
+        init_db()
+        logger.info("Database tables initialized.")
     yield
     logger.info("Shutting down application...")
 
@@ -22,3 +28,8 @@ app = FastAPI(title="AgentDesk API", lifespan=lifespan)
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
+
+@app.get("/customers")
+def get_customers(db: Session = Depends(get_db)):
+    customers = db.query(Customer).all()
+    return customers
