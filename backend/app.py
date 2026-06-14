@@ -1,9 +1,10 @@
 import logging
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI
 from contextlib import asynccontextmanager
-from database import verify_db_connection, init_db, get_db, SessionLocal
+from database import verify_db_connection, init_db, SessionLocal
 from models import Customer
-from sqlalchemy.orm import Session
+from seed import seed_database
+from routers import customers_router, users_router, subscriptions_router, invoices_router, tickets_router
 from seed import seed_database
 
 # Configure logging
@@ -41,11 +42,12 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="AgentDesk API", lifespan=lifespan)
 
+app.include_router(customers_router)
+app.include_router(users_router)
+app.include_router(subscriptions_router)
+app.include_router(invoices_router)
+app.include_router(tickets_router)
+
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
-
-@app.get("/customers")
-def get_customers(db: Session = Depends(get_db)):
-    customers = db.query(Customer).all()
-    return customers
