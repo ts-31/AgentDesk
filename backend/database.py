@@ -1,14 +1,10 @@
-import os
 import logging
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.exc import OperationalError
-from dotenv import load_dotenv
+from config import settings
 
-# Load environment variables
-load_dotenv()
-
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://agentdesk:agentdesk_password@127.0.0.1:5433/agentdesk_db")
+DATABASE_URL = settings.database_url
 
 # Create SQLAlchemy engine
 engine = create_engine(DATABASE_URL, echo=False)
