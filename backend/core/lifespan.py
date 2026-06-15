@@ -1,7 +1,7 @@
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from database import verify_db_connection, init_db, SessionLocal
+from database import verify_db_connection, init_db, SessionLocal, enable_pgvector, verify_pgvector
 from models import Customer
 from seed import seed_database
 
@@ -19,6 +19,10 @@ async def lifespan(app: FastAPI):
         logger.info("Initialising database tables...")
         init_db()
         logger.info("Database tables initialised.")
+
+        # Enable and verify pgvector extension
+        enable_pgvector()
+        verify_pgvector()
 
         # Auto-seed if the database is empty
         db = SessionLocal()
