@@ -7,6 +7,7 @@ from routers import (
     subscriptions_router,
     invoices_router,
     tickets_router,
+    knowledge_base_router,
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -18,6 +19,7 @@ app.include_router(users_router)
 app.include_router(subscriptions_router)
 app.include_router(invoices_router)
 app.include_router(tickets_router)
+app.include_router(knowledge_base_router)
 
 
 @app.get("/health")

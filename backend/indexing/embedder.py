@@ -40,3 +40,22 @@ def embed_texts(texts: list[str]) -> list[list[float]]:
     prefixed = [f"passage: {t}" for t in texts]
     embeddings = model.encode(prefixed, normalize_embeddings=True, show_progress_bar=False)
     return embeddings.tolist()
+
+
+def embed_query(text: str) -> list[float]:
+    """
+    Generate a single embedding for a search query using the BGE query: prefix.
+
+    This is intentionally separate from embed_texts() — BGE-small uses asymmetric
+    retrieval where passages and queries must use different prefixes to produce
+    accurate similarity scores.
+
+    Args:
+        text: The natural language query string.
+
+    Returns:
+        A 384-dim float vector.
+    """
+    model = load_model()
+    embedding = model.encode(f"query: {text}", normalize_embeddings=True)
+    return embedding.tolist()
