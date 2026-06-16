@@ -71,3 +71,6 @@ coverage.xml
 
 # macOS
 .DS_Store
+
+# HuggingFace model cache (downloaded embedding model weights)
+.cache/
