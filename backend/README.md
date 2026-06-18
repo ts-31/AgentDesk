@@ -6,6 +6,7 @@ TeamFlow is a customer support backend built with FastAPI, PostgreSQL, `pgvector
 ## Project Structure
 ```text
 backend/
+├── agent/              # Grok-based RAG answer generation logic
 ├── core/               # Core configurations and application setup
 ├── docs/               # API examples and documentation
 ├── indexing/           # Knowledge base document processing and embedding logic

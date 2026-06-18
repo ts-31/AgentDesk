@@ -291,3 +291,80 @@ curl -X GET "http://127.0.0.1:8000/knowledge-base/search?q=how%20do%20I%20reset%
   ]
 }
 ```
+
+---
+
+## 🤖 Agent API
+
+### 1. Ask a Question (RAG Pipeline)
+Submit a natural language question to be processed by the RAG (Retrieval-Augmented Generation) pipeline. The system queries the knowledge base using semantic search, filters results using the similarity threshold, constructs a prompt grounded in the relevant context, and calls Grok to generate an answer.
+
+**Request:**
+```bash
+curl -X POST "http://127.0.0.1:8000/agent/ask" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "question": "How do I reset my password?"
+  }'
+```
+
+**Success Response (200 OK - Answer Found):**
+```json
+{
+  "answer": "To reset your password:\n\n1. Go to the TeamFlow login page at app.teamflow.io/login.\n2. Click **Forgot your password?** below the sign-in form.\n3. Enter your registered email address and click **Send Reset Link**.\n4. Check your inbox for an email from noreply@teamflow.io (it may take up to 2 minutes).\n5. Click the reset link in the email (valid for 30 minutes).\n6. Enter and confirm your new password, then click **Reset Password**.\n7. Sign in with your new password on the login page.\n\nIf you don't see the email, check your Spam/Junk folder. Expired links can be replaced by requesting a new one.",
+  "sources": [
+    "password-reset-and-login-issues",
+    "api-rate-limits-and-authentication"
+  ]
+}
+```
+
+**Success Response (200 OK - Fallback Answer / Below Threshold):**
+If no knowledge base chunks meet the similarity threshold configured via `RAG_SIMILARITY_THRESHOLD` (e.g. 0.75), the agent will return the configured fallback answer.
+
+**Request:**
+```bash
+curl -X POST "http://127.0.0.1:8000/agent/ask" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "question": "What is the capital of France?"
+  }'
+```
+
+**Response:**
+```json
+{
+  "answer": "I'm sorry, I couldn't find relevant information in the knowledge base to answer your question. You may need to submit a support ticket for further assistance.",
+  "sources": []
+}
+```
+
+**Error Response (422 Unprocessable Entity - Empty or Whitespace-only Question):**
+The request body is validated to ensure that the question is neither empty nor consists solely of whitespace.
+
+**Request:**
+```bash
+curl -X POST "http://127.0.0.1:8000/agent/ask" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "question": "   "
+  }'
+```
+
+**Response:**
+```json
+{
+  "detail": [
+    {
+      "type": "value_error",
+      "loc": [
+        "body",
+        "question"
+      ],
+      "msg": "Value error, Question cannot be empty or consist only of whitespace.",
+      "input": "   "
+    }
+  ]
+}
+```
+
