@@ -1,15 +1,32 @@
 """
 retriever.py — Vector similarity search against the knowledge_chunks table.
 
-This module is intentionally isolated from the router so that a future
-LangChain integration can call semantic_search() directly without any
-changes to the API layer.
+This module provides two interfaces:
+
+1. semantic_search() — original function-based API.
+   Still used by GET /knowledge-base/search.  Unchanged.
+
+2. PgVectorRetriever — LangChain BaseRetriever wrapping semantic_search().
+   Used by the LCEL (LangChain Expression Language) chain in agent/chain.py.
+   Similarity threshold filtering is applied here so the chain receives only
+   documents that passed the threshold (an empty list triggers the fallback).
 """
 
-from sqlalchemy.orm import Session
+from typing import Any, List
+
+from langchain_core.callbacks import CallbackManagerForRetrieverRun
+from langchain_core.documents import Document
+from langchain_core.retrievers import BaseRetriever
+from pydantic import ConfigDict
 from sqlalchemy import text
+from sqlalchemy.orm import Session
+
 from indexing.embedder import embed_query
 
+
+# ---------------------------------------------------------------------------
+# Original function-based API — unchanged
+# ---------------------------------------------------------------------------
 
 def semantic_search(
     query: str,
@@ -57,3 +74,56 @@ def semantic_search(
         }
         for row in rows
     ]
+
+
+# ---------------------------------------------------------------------------
+# LangChain retriever — wraps semantic_search() as a BaseRetriever
+# ---------------------------------------------------------------------------
+
+class PgVectorRetriever(BaseRetriever):
+    """
+    LangChain-compatible retriever backed by the existing pgvector SQL pipeline.
+
+    Instantiate per-request with the active SQLAlchemy session so that
+    connection lifecycle is tied to the FastAPI request (via Depends(get_db)).
+
+    Attributes:
+        db:        Active SQLAlchemy Session.
+        top_k:     Maximum raw candidates to fetch from pgvector (pre-filter).
+        threshold: Minimum similarity_score to include in results.
+                   Mirrors settings.rag_similarity_threshold.
+    """
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    db: Any          # Session — typed as Any to satisfy Pydantic's model check
+    top_k: int = 5
+    threshold: float = 0.75
+
+    def _get_relevant_documents(
+        self,
+        query: str,
+        *,
+        run_manager: CallbackManagerForRetrieverRun,
+    ) -> List[Document]:
+        """
+        Retrieve and threshold-filter pgvector results, returning Documents.
+
+        An empty list signals to chain.py that no chunks met the threshold,
+        which triggers the standard fallback response — identical behaviour to
+        the inline filter that was previously in routers/agent.py.
+        """
+        raw = semantic_search(query=query, db=self.db, top_k=self.top_k)
+        filtered = [c for c in raw if c["similarity_score"] >= self.threshold]
+
+        return [
+            Document(
+                page_content=c["chunk_text"],
+                metadata={
+                    "article_title":    c["article_title"],
+                    "article_slug":     c["article_slug"],
+                    "similarity_score": c["similarity_score"],
+                },
+            )
+            for c in filtered
+        ]

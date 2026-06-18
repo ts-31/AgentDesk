@@ -9,4 +9,7 @@ Faker
 pgvector
 sentence-transformers
 torch
-xai-sdk
+langchain-core
+langchain-xai
+langchain
+langchain-classic
