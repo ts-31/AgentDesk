@@ -7,7 +7,7 @@ This module provides two interfaces:
    Still used by GET /knowledge-base/search.  Unchanged.
 
 2. PgVectorRetriever — LangChain BaseRetriever wrapping semantic_search().
-   Used by the LCEL (LangChain Expression Language) chain in agent/chain.py.
+   Used by run_rag() in agent/chain.py.
    Similarity threshold filtering is applied here so the chain receives only
    documents that passed the threshold (an empty list triggers the fallback).
 """

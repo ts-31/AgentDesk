@@ -1,31 +1,16 @@
 """
-chain.py — LangChain LCEL (LangChain Expression Language) retrieval chain for the RAG pipeline.
+chain.py — LangChain retrieval logic for the RAG pipeline.
 
 This module is the single orchestration layer that replaced the ad-hoc
-glue code previously spread across routers/agent.py.
+glue code previously spread across routers/agent.py. It uses native Python
+orchestration around langchain-core primitives instead of legacy LCEL "chains".
 
 Public surface:
   run_rag(question, db) -> dict  — called by routers/agent.py
-  FALLBACK_ANSWER               — re-exported so the router can reference it
-
-Internal chain structure (LCEL):
-  PgVectorRetriever
-    → create_stuff_documents_chain(ChatXAI, RAG_PROMPT)
-    → create_retrieval_chain(retriever, document_chain)
-
-create_retrieval_chain returns:
-  {"input": str, "context": list[Document], "answer": str}
-
-The "context" list is used here to extract deduplicated article_slug sources,
-preserving the same source ordering logic that was in the original router.
 """
 
 import logging
-from typing import Any
 
-from langchain_classic.chains import create_retrieval_chain
-from langchain_classic.chains.combine_documents import create_stuff_documents_chain
-from langchain_core.prompts import PromptTemplate
 from sqlalchemy.orm import Session
 
 from agent.llm import get_llm
@@ -41,47 +26,13 @@ FALLBACK_ANSWER = (
     "further assistance."
 )
 
-# Per-document prompt: preserves the [Source: slug] header format that Grok
-# previously received from _build_user_message() in the old generator.py.
-_DOCUMENT_PROMPT = PromptTemplate.from_template(
-    "[Source: {article_slug}]\n{page_content}"
-)
-
-
-def build_rag_chain(db: Session) -> Any:
-    """
-    Construct a per-request LCEL retrieval chain.
-
-    The retriever is instantiated with the caller's DB session so that
-    SQLAlchemy's connection-per-request lifecycle is respected — no
-    session is held open beyond the request that created this chain.
-
-    Args:
-        db: An active SQLAlchemy session (injected by FastAPI Depends).
-
-    Returns:
-        A LangChain Runnable that accepts {"input": question_str} and
-        returns {"input", "context", "answer"}.
-    """
-    retriever = PgVectorRetriever(
-        db=db,
-        top_k=5,
-        threshold=settings.rag_similarity_threshold,
-    )
-    document_chain = create_stuff_documents_chain(
-        llm=get_llm(),
-        prompt=RAG_PROMPT,
-        document_prompt=_DOCUMENT_PROMPT,
-    )
-    return create_retrieval_chain(retriever, document_chain)
-
 
 def run_rag(question: str, db: Session) -> dict:
     """
     Execute the full RAG pipeline and return a result dict.
 
-    This is the single entry-point called by routers/agent.py, keeping
-    the router free of any chain or retrieval logic.
+    This is the single entry-point called by routers/agent.py. It uses
+    pure Python to coordinate the retriever and the language model.
 
     Args:
         question: The user question (already stripped and validated).
@@ -98,17 +49,15 @@ def run_rag(question: str, db: Session) -> dict:
         RuntimeError: Wraps any LLM/network-level error so the router can
                       surface a clean HTTP 502 without leaking internals.
     """
-    chain = build_rag_chain(db)
+    # 1. Retrieve relevant chunks
+    retriever = PgVectorRetriever(
+        db=db,
+        top_k=5,
+        threshold=settings.rag_similarity_threshold,
+    )
+    docs = retriever.invoke(question)
 
-    try:
-        result = chain.invoke({"input": question})
-    except Exception as exc:
-        logger.error("LangChain chain invocation failed: %s", exc)
-        raise RuntimeError(f"LLM generation error: {exc}") from exc
-
-    docs = result.get("context", [])
-
-    # No chunks passed the similarity threshold — return the standard fallback
+    # 2. Check threshold fallback
     if not docs:
         logger.info(
             "No KB chunks above threshold %.2f for question: %r",
@@ -117,8 +66,22 @@ def run_rag(question: str, db: Session) -> dict:
         )
         return {"answer": FALLBACK_ANSWER, "sources": []}
 
-    # Deduplicate slugs while preserving retrieval order — same logic as the
-    # original router (the walrus-operator trick is kept for consistency).
+    # 3. Format the context block preserving [Source: slug] headers
+    context = "\n\n".join(
+        f"[Source: {doc.metadata['article_slug']}]\n{doc.page_content}"
+        for doc in docs
+    )
+
+    # 4. Generate the answer
+    try:
+        # Note: prompt expects {input} for the question and {context} for the documents
+        prompt = RAG_PROMPT.invoke({"input": question, "context": context})
+        response = get_llm().invoke(prompt)
+    except Exception as exc:
+        logger.error("LangChain LLM invocation failed: %s", exc)
+        raise RuntimeError(f"LLM generation error: {exc}") from exc
+
+    # 5. Extract and deduplicate sources while preserving retrieval order
     seen: set[str] = set()
     sources = [
         d.metadata["article_slug"]
@@ -127,4 +90,4 @@ def run_rag(question: str, db: Session) -> dict:
                 or seen.add(d.metadata["article_slug"]))  # type: ignore[func-returns-value]
     ]
 
-    return {"answer": result["answer"], "sources": sources}
+    return {"answer": response.content, "sources": sources}

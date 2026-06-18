@@ -11,5 +11,3 @@ sentence-transformers
 torch
 langchain-core
 langchain-xai
-langchain
-langchain-classic
