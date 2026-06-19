@@ -7,8 +7,8 @@ set -e  # Exit immediately on any error
 # ---------------------------------------------------------------------------
 # 1. Start the database container
 # ---------------------------------------------------------------------------
-echo "[DOCKER] Ensuring PostgreSQL container is running..."
-docker compose up -d db
+echo "[DOCKER] Ensuring PostgreSQL & pgAdmin containers are running..."
+docker compose up -d
 
 # ---------------------------------------------------------------------------
 # 2. Wait for PostgreSQL to accept connections (max 30s)
