@@ -368,3 +368,27 @@ curl -X POST "http://127.0.0.1:8000/agent/ask" \
 }
 ```
 
+### 2. Stateful Conversation (Memory & Persistence)
+To maintain conversation history across multiple requests, include a `thread_id` in your request body. The agent will use this to recall prior context, and the history is safely persisted in the PostgreSQL database so it survives server restarts.
+
+**Request (First Turn):**
+```bash
+curl -X POST "http://127.0.0.1:8000/agent/ask" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "question": "What is the refund policy?",
+    "thread_id": "user-session-123"
+  }'
+```
+
+**Request (Follow-up Turn):**
+```bash
+curl -X POST "http://127.0.0.1:8000/agent/ask" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "question": "Could you explain that shorter?",
+    "thread_id": "user-session-123"
+  }'
+```
+*(The agent will understand "that" refers to the refund policy discussed in the previous turn.)*
+
