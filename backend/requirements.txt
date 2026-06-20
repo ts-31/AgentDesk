@@ -12,3 +12,5 @@ torch
 langchain-core
 langchain-xai
 langgraph
+langgraph-checkpoint-postgres
+psycopg[binary,pool]

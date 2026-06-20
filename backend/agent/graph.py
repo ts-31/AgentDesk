@@ -8,11 +8,12 @@ for per-request dependency injection.
 Graph topology:
   START ──▶ retrieve ──▶ generate ──▶ END
 
-Checkpointer (MemorySaver):
-  The graph is compiled with the process-scoped MemorySaver from
+Checkpointer (PostgresSaver):
+  The graph is compiled with the process-scoped PostgresSaver from
   agent/memory.py.  When chain.py passes a non-empty configurable
-  {"thread_id": ...}, LangGraph automatically replays the stored
-  checkpoint and persists the updated state after each invocation.
+  {"thread_id": ...}, LangGraph reads the stored checkpoint from
+  PostgreSQL, replays it, and persists the updated state after each
+  invocation.  Conversation history survives application restarts.
   When thread_id is absent (config={}), the checkpointer is bypassed
   entirely and the graph behaves identically to the stateless version.
 

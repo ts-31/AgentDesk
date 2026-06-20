@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from database import verify_db_connection, init_db, SessionLocal, enable_pgvector, verify_pgvector
 from models import Customer
 from seed import seed_database
+from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +25,12 @@ async def lifespan(app: FastAPI):
         enable_pgvector()
         verify_pgvector()
 
+        # Initialise the PostgreSQL-backed LangGraph checkpointer.
+        # Must run after DB connectivity is confirmed so the pool can connect
+        # and setup() can create the checkpoint tables if they don't exist.
+        from agent.memory import init_checkpointer
+        init_checkpointer(settings.database_url)
+
         # Auto-seed if the database is empty
         db = SessionLocal()
         try:
@@ -40,3 +47,7 @@ async def lifespan(app: FastAPI):
 
     yield
     logger.info("Shutting down application...")
+
+    # Close the LangGraph checkpointer connection pool gracefully.
+    from agent.memory import close_checkpointer
+    close_checkpointer()
