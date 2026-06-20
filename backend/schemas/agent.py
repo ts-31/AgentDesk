@@ -1,9 +1,14 @@
+from typing import List, Optional
+
 from pydantic import BaseModel, field_validator
-from typing import List
 
 
 class AskRequest(BaseModel):
     question: str
+    # Optional conversation identifier.  When provided, the in-memory
+    # checkpointer retains messages for this thread across requests.
+    # When absent (default), the graph runs statelessly.
+    thread_id: Optional[str] = None
 
     @field_validator("question")
     @classmethod

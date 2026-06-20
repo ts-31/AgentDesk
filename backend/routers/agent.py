@@ -34,7 +34,7 @@ def ask(request: AskRequest, db: Session = Depends(get_db)):
     threshold.  Returns HTTP 502 if the LLM call fails.
     """
     try:
-        result = run_rag(question=request.question, db=db)
+        result = run_rag(question=request.question, db=db, thread_id=request.thread_id)
     except RuntimeError as exc:
         logger.error("Agent /ask generation failed: %s", exc)
         raise HTTPException(

@@ -8,8 +8,13 @@ for per-request dependency injection.
 Graph topology:
   START ──▶ retrieve ──▶ generate ──▶ END
 
-No checkpointer, no memory, no conditional edges.
-The compiled graph is cached via @lru_cache for the process lifetime.
+Checkpointer (MemorySaver):
+  The graph is compiled with the process-scoped MemorySaver from
+  agent/memory.py.  When chain.py passes a non-empty configurable
+  {"thread_id": ...}, LangGraph automatically replays the stored
+  checkpoint and persists the updated state after each invocation.
+  When thread_id is absent (config={}), the checkpointer is bypassed
+  entirely and the graph behaves identically to the stateless version.
 
 Runtime context vs. graph state
 ────────────────────────────────
@@ -19,21 +24,31 @@ RAGContext holds the SQLAlchemy Session because:
   - This cleanly separates infrastructure concerns from graph data.
   - RunnableConfig.configurable is designed for configuration parameters
     (model name, temperature, flags), not stateful infrastructure objects.
+
+Conversation history vs. RAG state
+────────────────────────────────────
+RAGState.messages accumulates [HumanMessage, AIMessage] pairs across
+turns via the add_messages reducer.  Keys question/docs/answer/sources
+are overwritten fresh on every invoke — they are never accumulated.
 """
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
-from functools import lru_cache
-from typing import TypedDict
+from typing import Annotated, TypedDict
 
 from langchain_core.documents import Document
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 from langgraph.graph import END, START, StateGraph
+from langgraph.graph.message import add_messages
 from langgraph.runtime import Runtime
 
 from agent.llm import get_llm
 from agent.prompt import RAG_PROMPT
 from config import settings
 from search.retriever import PgVectorRetriever
+
+logger = logging.getLogger(__name__)
 
 FALLBACK_ANSWER = (
     "I'm sorry, I couldn't find relevant information in the knowledge base "
@@ -72,6 +87,9 @@ class RAGState(TypedDict):
     docs:     list[Document]  # written by retrieve_node
     answer:   str             # written by generate_node
     sources:  list[str]       # written by generate_node
+    # add_messages reducer: appends incoming messages instead of replacing.
+    # Replayed by the checkpointer across turns when thread_id is provided.
+    messages: Annotated[list[BaseMessage], add_messages]
 
 
 # ---------------------------------------------------------------------------
@@ -96,22 +114,44 @@ def retrieve_node(state: RAGState, runtime: Runtime[RAGContext]) -> dict:
 
 def generate_node(state: RAGState) -> dict:
     """
-    Node 2 — generate the answer from docs.
+    Node 2 — generate the answer from docs, optionally using chat history.
 
-    Does not require runtime context because generation depends only
-    on state data produced by retrieve_node.
+    When thread_id is provided (checkpointer active), state["messages"]
+    contains prior [HumanMessage, AIMessage] pairs from earlier turns.
+    These are prepended to the RAG prompt so the LLM has conversation
+    context.  On the stateless path (no thread_id), messages is empty
+    and the behaviour is identical to the original implementation.
+
+    After generation, this turn's HumanMessage + AIMessage are appended
+    to messages via the add_messages reducer so the checkpointer persists
+    them for future turns.
     """
     docs = state["docs"]
 
     if not docs:
-        return {"answer": FALLBACK_ANSWER, "sources": []}
+        # Even on fallback, record the turn so history is coherent.
+        return {
+            "answer": FALLBACK_ANSWER,
+            "sources": [],
+            "messages": [
+                HumanMessage(content=state["question"]),
+                AIMessage(content=FALLBACK_ANSWER),
+            ],
+        }
 
     context = "\n\n".join(
         f"[Source: {d.metadata['article_slug']}]\n{d.page_content}"
         for d in docs
     )
-    prompt   = RAG_PROMPT.invoke({"input": state["question"], "context": context})
-    response = get_llm().invoke(prompt)
+
+    # Build prompt: prior conversation history + RAG prompt messages
+    history: list[BaseMessage] = list(state.get("messages", []))
+    rag_messages = RAG_PROMPT.format_messages(
+        input=state["question"], context=context
+    )
+    prompt_messages = history + rag_messages
+
+    response = get_llm().invoke(prompt_messages)
 
     seen: set[str] = set()
     sources = [
@@ -120,26 +160,55 @@ def generate_node(state: RAGState) -> dict:
         if not (d.metadata["article_slug"] in seen
                 or seen.add(d.metadata["article_slug"]))  # type: ignore[func-returns-value]
     ]
-    return {"answer": response.content, "sources": sources}
+
+    return {
+        "answer": response.content,
+        "sources": sources,
+        "messages": [
+            HumanMessage(content=state["question"]),
+            AIMessage(content=response.content),
+        ],
+    }
 
 
 # ---------------------------------------------------------------------------
-# Graph factory
+# Graph factory  (module-level singleton, not @lru_cache)
 # ---------------------------------------------------------------------------
 
-@lru_cache(maxsize=1)
-def get_rag_graph():
-    """
-    Build, compile, and cache the RAG StateGraph.
+# @lru_cache cannot be used here: LangGraph requires the same compiled graph
+# object that holds the MemorySaver reference to be reused across calls.
+# A module-level sentinel achieves the identical singleton guarantee.
+_graph_with_memory = None
+_graph_stateless = None
 
-    context_schema=RAGContext registers the typed runtime context so
-    LangGraph knows to inject Runtime[RAGContext] into nodes that
-    declare it as a parameter.
-    """
+
+def _build_graph() -> StateGraph:
     builder = StateGraph(RAGState, context_schema=RAGContext)
     builder.add_node("retrieve", retrieve_node)
     builder.add_node("generate", generate_node)
     builder.add_edge(START, "retrieve")
     builder.add_edge("retrieve", "generate")
     builder.add_edge("generate", END)
-    return builder.compile()
+    return builder
+
+
+def get_rag_graph(with_memory: bool = True):
+    """
+    Build, compile, and cache the RAG StateGraph.
+
+    When with_memory=True, it compiles with the MemorySaver checkpointer.
+    When with_memory=False, it compiles without a checkpointer to allow stateless execution.
+    """
+    global _graph_with_memory, _graph_stateless
+    if with_memory:
+        if _graph_with_memory is None:
+            from agent.memory import get_checkpointer  # local import avoids circularity
+            _graph_with_memory = _build_graph().compile(checkpointer=get_checkpointer())
+            logger.info("RAG graph compiled with MemorySaver checkpointer.")
+        return _graph_with_memory
+    else:
+        if _graph_stateless is None:
+            _graph_stateless = _build_graph().compile()
+            logger.info("RAG graph compiled without checkpointer (stateless).")
+        return _graph_stateless
+
