@@ -23,3 +23,8 @@ RAG_PROMPT = ChatPromptTemplate.from_messages([
     ("system", SYSTEM_PROMPT),
     ("human", "Knowledge base excerpts:\n\n{context}\n\nQuestion: {input}"),
 ])
+
+REWRITE_PROMPT = ChatPromptTemplate.from_messages([
+    ("system", "Given the following conversation history and the latest user question, rephrase the question to be a standalone search query that can be understood without context.\n\nConversation History:\n{history}\n\nIf the latest question is already standalone, return it as is. Do NOT answer the question. ONLY return the rewritten query."),
+    ("human", "{question}"),
+])

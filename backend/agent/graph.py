@@ -45,7 +45,7 @@ from langgraph.graph.message import add_messages
 from langgraph.runtime import Runtime
 
 from agent.llm import get_llm
-from agent.prompt import RAG_PROMPT
+from agent.prompt import RAG_PROMPT, REWRITE_PROMPT
 from config import settings
 from search.retriever import PgVectorRetriever
 
@@ -85,6 +85,7 @@ class RAGContext:
 
 class RAGState(TypedDict):
     question: str             # set by caller in run_rag()
+    search_query: str         # written by rewrite_node
     docs:     list[Document]  # written by retrieve_node
     answer:   str             # written by generate_node
     sources:  list[str]       # written by generate_node
@@ -97,9 +98,30 @@ class RAGState(TypedDict):
 # Nodes
 # ---------------------------------------------------------------------------
 
+def rewrite_node(state: RAGState) -> dict:
+    """
+    Node 1 — rewrite question into a standalone search query based on history.
+    """
+    messages = state.get("messages", [])
+    if not messages:
+        return {"search_query": state["question"]}
+
+    history_str = "\n".join(
+        f"{'User' if isinstance(m, HumanMessage) else 'Assistant'}: {m.content}"
+        for m in messages
+    )
+    
+    prompt = REWRITE_PROMPT.format_messages(
+        history=history_str,
+        question=state["question"]
+    )
+    response = get_llm().invoke(prompt)
+    return {"search_query": response.content}
+
+
 def retrieve_node(state: RAGState, runtime: Runtime[RAGContext]) -> dict:
     """
-    Node 1 — retrieve KB chunks and write them to state["docs"].
+    Node 2 — retrieve KB chunks and write them to state["docs"].
 
     The SQLAlchemy Session is accessed exclusively via
     runtime.context.db — it is never part of the graph state.
@@ -109,7 +131,7 @@ def retrieve_node(state: RAGState, runtime: Runtime[RAGContext]) -> dict:
         top_k=5,
         threshold=settings.rag_similarity_threshold,
     )
-    docs = retriever.invoke(state["question"])
+    docs = retriever.invoke(state.get("search_query", state["question"]))
     return {"docs": docs}
 
 
@@ -185,9 +207,11 @@ _graph_stateless = None
 
 def _build_graph() -> StateGraph:
     builder = StateGraph(RAGState, context_schema=RAGContext)
+    builder.add_node("rewrite", rewrite_node)
     builder.add_node("retrieve", retrieve_node)
     builder.add_node("generate", generate_node)
-    builder.add_edge(START, "retrieve")
+    builder.add_edge(START, "rewrite")
+    builder.add_edge("rewrite", "retrieve")
     builder.add_edge("retrieve", "generate")
     builder.add_edge("generate", END)
     return builder
