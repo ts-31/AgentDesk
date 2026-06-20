@@ -7,6 +7,11 @@ TeamFlow is a customer support backend built with FastAPI, PostgreSQL, `pgvector
 ```text
 backend/
 ├── agent/              # Grok-based RAG answer generation logic
+│   ├── chain.py        # Entry point for RAG execution
+│   ├── graph.py        # LangGraph workflow (rewrite, retrieve, generate)
+│   ├── llm.py          # LLM client initialization
+│   ├── memory.py       # PostgreSQL checkpointer for graph state memory
+│   └── prompt.py       # Prompt templates for RAG and query rewriting
 ├── core/               # Core configurations and application setup
 ├── docs/               # API examples and documentation
 ├── indexing/           # Knowledge base document processing and embedding logic

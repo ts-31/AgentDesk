@@ -390,5 +390,5 @@ curl -X POST "http://127.0.0.1:8000/agent/ask" \
     "thread_id": "user-session-123"
   }'
 ```
-*(The agent will understand "that" refers to the refund policy discussed in the previous turn.)*
+*(The agent will automatically rewrite the follow-up question into a standalone query—e.g., "Could you explain the refund policy shorter?"—using the conversation history before retrieving context, ensuring highly accurate answers.)*
 
