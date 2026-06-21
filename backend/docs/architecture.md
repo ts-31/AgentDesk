@@ -1,69 +1,68 @@
 # TeamFlow Agent Architecture
 
-The TeamFlow backend uses **LangGraph** to orchestrate its Retrieval-Augmented Generation (RAG) agent. The agent is designed as a sequential multi-step pipeline that features conversational memory and query rewriting to ensure highly accurate answers during multi-turn interactions.
+The TeamFlow backend uses **LangGraph** to orchestrate its hybrid agent architecture. The agent handles both Retrieval-Augmented Generation (RAG) for knowledge base queries and specific CRM operations via tools. It features conversational memory and intelligent query routing to ensure accurate and context-aware responses.
 
 ---
 
 ## 🗺️ High-Level Topology
 
-The graph follows a strict linear (acyclic) topology:
+The graph utilizes an LLM-based intent classifier as the entry point, branching into a strict linear (acyclic) topology for either RAG or Tools execution:
 
 ```mermaid
 graph TD
-    A[START] --> B[Rewrite Node]
-    B --> C[Retrieve Node]
-    C --> D[Generate Node]
-    D --> E[END]
+    START((START)) --> classify[classify_intent]
+    
+    classify -- "rag" --> rewrite[rewrite_node]
+    rewrite --> retrieve[retrieve_node]
+    retrieve --> generate[generate_node]
+    generate --> END((END))
+    
+    classify -- "tools" --> tool_agent[tool_agent_node]
+    tool_agent -- "tools_condition" --> tools[ToolNode]
+    tools --> tool_synthesize[tool_synthesize_node]
+    tool_agent -- "no tool calls" --> tool_synthesize
+    tool_synthesize --> END
 ```
 
-### 1. `START`
-The entry point of the graph. The graph is initialized with the raw user `question`. If a `thread_id` is provided, the `PostgresSaver` checkpointer seamlessly loads the prior conversation history into the state's `messages` before executing the first node.
+### 1. `START` & Intent Classification (`classify_node`)
+The entry point of the graph. The graph is initialized with the raw user `question`. The classifier node uses structured output to strictly categorize the query's intent into `rag` or `tools` and saves it to the state. 
 
-### 2. Rewrite Node (`rewrite_node`)
-**Purpose:** Ensure the search query is fully self-contained.
-- Evaluates the conversation history (`messages`).
-- If history exists, it uses an LLM to rewrite the current user question into a standalone query (e.g., changing "How much does it cost?" into "How much does the Enterprise plan cost?").
-- If there is no history, it simply passes the original `question` forward as the `search_query`.
-- **Output:** Populates the `search_query` field in the state.
+### 2. The RAG Branch (`rag`)
+If the intent is general platform knowledge or support documentation:
+- **Rewrite Node (`rewrite_node`)**: Evaluates conversational history. If history exists, rewrites the question into a standalone query.
+- **Retrieve Node (`retrieve_node`)**: Executes semantic vector search against the PostgreSQL `pgvector` database and retrieves document chunks.
+- **Generate Node (`generate_node`)**: Synthesizes the final answer using Grok, citations, and appends the final turn to the conversation memory.
 
-### 3. Retrieve Node (`retrieve_node`)
-**Purpose:** Fetch relevant contextual knowledge.
-- Takes the newly generated `search_query`.
-- Executes a semantic vector search against the PostgreSQL `pgvector` database.
-- Filters out any chunks that fall below the predefined `RAG_SIMILARITY_THRESHOLD`.
-- **Output:** Populates the `docs` field in the state with the retrieved document chunks.
+### 3. The Tools Branch (`tools`)
+If the intent requires looking up specific CRM data (e.g., invoices, tickets, customer data):
+- **Tool Agent Node (`tool_agent_node`)**: Evaluates the question and conversational history to generate explicit tool calls utilizing `bind_tools(ALL_TOOLS)`.
+- **Tools Node (`ToolNode`)**: A standard LangGraph prebuilt node that executes the requested python functions against the PostgreSQL database.
+- **Synthesize Node (`tool_synthesize_node`)**: Receives the raw tool outputs and synthesizes a clean, user-friendly final response.
 
-### 4. Generate Node (`generate_node`)
-**Purpose:** Synthesize the final grounded answer.
-- Compiles a prompt containing the conversation history, the user's raw question, and the extracted text from `docs`.
-- Invokes the Grok LLM to generate the final response.
-- Extracts and deduplicates the `article_slug` metadata from the chunks to form the source citations.
-- Appends the current question and the new answer to the `messages` array for future context.
-- **Output:** Populates the `answer` and `sources` fields.
-
-### 5. `END`
-The graph execution concludes. The checkpointer automatically saves the updated state (including the new `messages`) back to PostgreSQL for the next turn.
+### 4. `END`
+The graph execution concludes. If a `thread_id` was provided, the checkpointer automatically saves the updated state (including new `messages` and tool outputs) back to PostgreSQL for the next turn.
 
 ---
 
 ## 🗃️ State Management
 
-Information flowing through the graph is strictly typed via the `RAGState` `TypedDict`.
+Information flowing through the graph is strictly typed via the `AgentState` `TypedDict`.
 
 ```python
-class RAGState(TypedDict):
+class AgentState(TypedDict):
     question: str             # The raw user input
-    search_query: str         # The standalone query (created by rewrite)
-    docs: list[Document]      # KB chunks (created by retrieve)
-    answer: str               # The LLM generated answer (created by generate)
-    sources: list[str]        # Array of article slugs (created by generate)
+    intent: str               # The routed intent ("rag" or "tools")
+    search_query: str         # The standalone query (RAG branch)
+    docs: list[Document]      # KB chunks (RAG branch)
+    answer: str               # The LLM generated answer (Both branches)
+    sources: list[str]        # Array of article slugs (Both branches)
     
-    # Reducer that appends new [HumanMessage, AIMessage] pairs across turns
+    # Reducer that appends new messages across turns
     messages: Annotated[list[BaseMessage], add_messages]
 ```
 
 ### Separation of State and Infrastructure
-Database connection sessions (`Session`) are explicitly excluded from `RAGState` because they cannot be JSON-serialized for checkpointing. Instead, infrastructure dependencies are passed into the nodes dynamically using LangGraph's **Runtime Context API** (`Runtime[RAGContext]`).
+Database connection sessions (`Session`) are explicitly excluded from `AgentState` because they cannot be JSON-serialized for checkpointing. Instead, infrastructure dependencies are passed into the nodes dynamically using LangGraph's **Runtime Context API** (`Runtime[AgentContext]`).
 
 ---
 

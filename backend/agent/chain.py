@@ -12,8 +12,8 @@ the only internal changes are:
      graph behaves identically to the original stateless implementation.
 
 The SQLAlchemy Session is forwarded to the graph as typed runtime context
-(context=RAGContext(db=db)) via the official LangGraph Runtime[Context]
-API. It is never embedded in the graph state, keeping RAGState clean and
+(context=AgentContext(db=db)) via the official LangGraph Runtime[Context]
+API. It is never embedded in the graph state, keeping AgentState clean and
 serialization-safe for the checkpointer.
 
 Public surface:
@@ -24,7 +24,7 @@ import logging
 
 from sqlalchemy.orm import Session
 
-from agent.graph import RAGContext, get_rag_graph
+from agent.graph import AgentContext, get_rag_graph
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +68,7 @@ def run_rag(question: str, db: Session, thread_id: str | None = None) -> dict:
         result = graph.invoke(
             {"question": question},
             config=config,
-            context=RAGContext(db=db),
+            context=AgentContext(db=db),
         )
     except Exception as exc:
         logger.error("LangGraph RAG graph invocation failed: %s", exc)
