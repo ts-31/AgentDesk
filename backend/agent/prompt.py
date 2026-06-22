@@ -1,11 +1,19 @@
 """
-prompt.py — LangChain prompt template for the RAG pipeline.
+prompt.py — LangChain prompt templates for the TeamFlow agent.
 
-The system prompt text is identical to the original _SYSTEM_PROMPT in
-generator.py. The {context} placeholder is populated by
-create_stuff_documents_chain using a per-document template that preserves
-the original [Source: slug] header format. {input} receives the raw user
-question from the chain invocation.
+Templates:
+  RAG_PROMPT      — Used inside retrieve_kb to format KB excerpts for the LLM.
+                    {context} receives the [Source: slug]\\nchunk_text blocks.
+                    {input} receives the user's question.
+
+  REWRITE_PROMPT  — Used inside retrieve_kb to rewrite a conversational
+                    question into a standalone search query.
+                    {history} receives the formatted conversation history.
+                    {question} receives the latest user question.
+
+  REACT_SYSTEM_PROMPT — System prompt for the top-level ReAct agent node.
+                    Gives the LLM its tool menu and reasoning rules, replacing
+                    the removed CLASSIFY_PROMPT and TOOL_SYSTEM_PROMPT.
 """
 
 from langchain_core.prompts import ChatPromptTemplate
@@ -17,24 +25,49 @@ SYSTEM_PROMPT = (
     "Do not make up facts not present in the excerpts."
 )
 
-# {context} — formatted document block injected by create_stuff_documents_chain
-# {input}   — raw user question passed via chain.invoke({"input": question})
+# {context} — formatted document block produced by retrieve_kb
+# {input}   — raw user question
 RAG_PROMPT = ChatPromptTemplate.from_messages([
     ("system", SYSTEM_PROMPT),
     ("human", "Knowledge base excerpts:\n\n{context}\n\nQuestion: {input}"),
 ])
 
+# {history} — formatted prior conversation (or "(no prior conversation)")
+# {question} — latest user question to rewrite into a standalone query
 REWRITE_PROMPT = ChatPromptTemplate.from_messages([
-    ("system", "Given the following conversation history and the latest user question, rephrase the question to be a standalone search query that can be understood without context.\n\nConversation History:\n{history}\n\nIf the latest question is already standalone, return it as is. Do NOT answer the question. ONLY return the rewritten query."),
+    ("system", (
+        "Given the following conversation history and the latest user question, "
+        "rephrase the question to be a standalone search query that can be understood "
+        "without context.\n\n"
+        "Conversation History:\n{history}\n\n"
+        "If the latest question is already standalone, return it as is. "
+        "Do NOT answer the question. ONLY return the rewritten query."
+    )),
     ("human", "{question}"),
 ])
 
-CLASSIFY_PROMPT = ChatPromptTemplate.from_messages([
-    ("system", "You are a routing agent for TeamFlow. Determine if the user's request requires the 'rag' knowledge base (general platform knowledge, how-tos, documentation) or 'tools' (CRM customer operations, viewing tickets, invoices, subscriptions).\n\nIf the user asks about specific customer data, choose 'tools'. If they ask how a feature works or need support documentation, choose 'rag'."),
-    ("human", "{question}"),
-])
-
-TOOL_SYSTEM_PROMPT = (
-    "You are a customer ops agent with access to CRM tools. Use the provided tools to fulfill the user's request.\n"
-    "Answer the user based on the tool outputs. Be concise, accurate, and helpful."
+# System prompt for the ReAct agent node.
+# Replaces both CLASSIFY_PROMPT (removed) and TOOL_SYSTEM_PROMPT (removed).
+# The agent uses this to reason about which tools to call and in what order.
+REACT_SYSTEM_PROMPT = (
+    "You are TeamFlow's intelligent support agent. "
+    "You have access to the following tools:\n\n"
+    "  • retrieve_kb            — Search the knowledge base for documentation, "
+    "feature explanations, API rate limits, subscription plans, and policies.\n"
+    "  • get_customer           — Look up a customer record by UUID.\n"
+    "  • get_customer_invoices  — Retrieve invoices for a customer.\n"
+    "  • get_customer_subscriptions — Retrieve subscription details for a customer.\n"
+    "  • get_customer_tickets   — Retrieve support tickets for a customer.\n"
+    "  • create_ticket          — Create a new support ticket.\n\n"
+    "Reasoning rules:\n"
+    "1. For questions about platform features, documentation, or policies — "
+    "call retrieve_kb.\n"
+    "2. For questions about specific customer data (invoices, tickets, subscriptions, "
+    "account details) — call the appropriate CRM tool.\n"
+    "3. For questions that mix both (e.g. 'What plan is Acme on, and what are the "
+    "API rate limits?') — call CRM tools AND retrieve_kb, then synthesize a unified answer.\n"
+    "4. For purely conversational questions with no tool need — answer directly.\n"
+    "5. Never fabricate data. If a tool returns no results, say so honestly.\n"
+    "Be concise, accurate, and helpful."
 )
+
