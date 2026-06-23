@@ -4,6 +4,46 @@ This document provides `curl` examples for interacting with the TeamFlow backend
 
 ---
 
+## 🔐 Authentication & Access Token
+
+All resources (except `/auth/*` endpoints and `/health`) now require authentication. You must obtain a JSON Web Token (JWT) by calling the login endpoint and supply it in the `Authorization` header as a Bearer token:
+`-H "Authorization: Bearer <access_token>"`
+
+### 1. Authenticate / Login
+Retrieve access and refresh tokens.
+
+**Request:**
+```bash
+curl -X POST "http://127.0.0.1:8000/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "lisa30@example.com",
+    "password": "changeme123"
+  }'
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+### 2. Refresh Token
+Exchange a refresh token for a fresh access token.
+
+**Request:**
+```bash
+curl -X POST "http://127.0.0.1:8000/auth/refresh" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "refresh_token": "<refresh_token>"
+  }'
+```
+
+---
+
 ## 🏢 Customers API
 
 ### 1. List All Customers
@@ -11,7 +51,8 @@ Fetch a paginated list of customers.
 
 **Request:**
 ```bash
-curl -X GET "http://127.0.0.1:8000/customers?skip=0&limit=5"
+curl -X GET "http://127.0.0.1:8000/customers?skip=0&limit=5" \
+  -H "Authorization: Bearer <access_token>"
 ```
 
 **Success Response (200 OK):**
@@ -31,7 +72,8 @@ Fetch details for a specific customer by UUID.
 
 **Request:**
 ```bash
-curl -X GET "http://127.0.0.1:8000/customers/b61e957b-e0f8-4bc2-941a-31a737b4c1c3"
+curl -X GET "http://127.0.0.1:8000/customers/b61e957b-e0f8-4bc2-941a-31a737b4c1c3" \
+  -H "Authorization: Bearer <access_token>"
 ```
 
 **Error Response (404 Not Found):**
@@ -46,22 +88,26 @@ You can fetch related entities for a specific customer using nested routes:
 
 **List Users for a Customer:**
 ```bash
-curl -X GET "http://127.0.0.1:8000/customers/b61e957b-e0f8-4bc2-941a-31a737b4c1c3/users"
+curl -X GET "http://127.0.0.1:8000/customers/b61e957b-e0f8-4bc2-941a-31a737b4c1c3/users" \
+  -H "Authorization: Bearer <access_token>"
 ```
 
 **Get Subscriptions for a Customer:**
 ```bash
-curl -X GET "http://127.0.0.1:8000/customers/b61e957b-e0f8-4bc2-941a-31a737b4c1c3/subscription"
+curl -X GET "http://127.0.0.1:8000/customers/b61e957b-e0f8-4bc2-941a-31a737b4c1c3/subscription" \
+  -H "Authorization: Bearer <access_token>"
 ```
 
 **List Invoices for a Customer:**
 ```bash
-curl -X GET "http://127.0.0.1:8000/customers/b61e957b-e0f8-4bc2-941a-31a737b4c1c3/invoices"
+curl -X GET "http://127.0.0.1:8000/customers/b61e957b-e0f8-4bc2-941a-31a737b4c1c3/invoices" \
+  -H "Authorization: Bearer <access_token>"
 ```
 
 **List Tickets for a Customer:**
 ```bash
-curl -X GET "http://127.0.0.1:8000/customers/b61e957b-e0f8-4bc2-941a-31a737b4c1c3/tickets"
+curl -X GET "http://127.0.0.1:8000/customers/b61e957b-e0f8-4bc2-941a-31a737b4c1c3/tickets" \
+  -H "Authorization: Bearer <access_token>"
 ```
 
 ---
@@ -73,7 +119,8 @@ Fetch a paginated list of users.
 
 **Request:**
 ```bash
-curl -X GET "http://127.0.0.1:8000/users?limit=5"
+curl -X GET "http://127.0.0.1:8000/users?limit=5" \
+  -H "Authorization: Bearer <access_token>"
 ```
 
 **Success Response (200 OK):**
@@ -94,7 +141,8 @@ Fetch a single user by UUID.
 
 **Request:**
 ```bash
-curl -X GET "http://127.0.0.1:8000/users/1f66c75f-4ea6-4e05-82c6-8c83b1578cd5"
+curl -X GET "http://127.0.0.1:8000/users/1f66c75f-4ea6-4e05-82c6-8c83b1578cd5" \
+  -H "Authorization: Bearer <access_token>"
 ```
 
 ---
@@ -106,7 +154,8 @@ Fetch a paginated list of subscriptions.
 
 **Request:**
 ```bash
-curl -X GET "http://127.0.0.1:8000/subscriptions?limit=5"
+curl -X GET "http://127.0.0.1:8000/subscriptions?limit=5" \
+  -H "Authorization: Bearer <access_token>"
 ```
 
 ### 2. Get Subscription Details
@@ -114,7 +163,8 @@ Fetch a specific subscription by UUID.
 
 **Request:**
 ```bash
-curl -X GET "http://127.0.0.1:8000/subscriptions/c3975ff1-f1e3-42b7-ac8a-fa97f9a87d47"
+curl -X GET "http://127.0.0.1:8000/subscriptions/c3975ff1-f1e3-42b7-ac8a-fa97f9a87d47" \
+  -H "Authorization: Bearer <access_token>"
 ```
 
 **Success Response (200 OK):**
@@ -141,7 +191,8 @@ Fetch a paginated list of invoices.
 
 **Request:**
 ```bash
-curl -X GET "http://127.0.0.1:8000/invoices?limit=5"
+curl -X GET "http://127.0.0.1:8000/invoices?limit=5" \
+  -H "Authorization: Bearer <access_token>"
 ```
 
 ### 2. Get Invoice Details
@@ -149,7 +200,8 @@ Fetch a specific invoice by UUID.
 
 **Request:**
 ```bash
-curl -X GET "http://127.0.0.1:8000/invoices/704cd756-a62a-4e0b-b11d-7c6aecdfe1c8"
+curl -X GET "http://127.0.0.1:8000/invoices/704cd756-a62a-4e0b-b11d-7c6aecdfe1c8" \
+  -H "Authorization: Bearer <access_token>"
 ```
 
 **Success Response (200 OK):**
@@ -176,7 +228,8 @@ Fetch a paginated list of support tickets.
 
 **Request:**
 ```bash
-curl -X GET "http://127.0.0.1:8000/tickets?limit=5"
+curl -X GET "http://127.0.0.1:8000/tickets?limit=5" \
+  -H "Authorization: Bearer <access_token>"
 ```
 
 ### 2. Get Ticket Details
@@ -184,7 +237,8 @@ Fetch a specific ticket by UUID.
 
 **Request:**
 ```bash
-curl -X GET "http://127.0.0.1:8000/tickets/1559c33a-a7b9-459d-a4c9-0d7e73459481"
+curl -X GET "http://127.0.0.1:8000/tickets/1559c33a-a7b9-459d-a4c9-0d7e73459481" \
+  -H "Authorization: Bearer <access_token>"
 ```
 
 **Success Response (200 OK):**
@@ -206,6 +260,7 @@ Create a new support ticket. Validates that the `customer_id` and `user_id` exis
 **Request:**
 ```bash
 curl -X POST "http://127.0.0.1:8000/tickets" \
+  -H "Authorization: Bearer <access_token>" \
   -H "Content-Type: application/json" \
   -d '{
     "customer_id": "8267285f-0c85-43d3-98cb-d2bc67bf8ddc",
@@ -231,13 +286,6 @@ curl -X POST "http://127.0.0.1:8000/tickets" \
 }
 ```
 
-**Error Response (404 Not Found - Invalid Customer/User):**
-```json
-{
-  "detail": "Customer not found"
-}
-```
-
 ---
 
 ## 🧠 Knowledge Base Search API
@@ -247,7 +295,8 @@ Perform a semantic search against the knowledge base.
 
 **Request:**
 ```bash
-curl -X GET "http://127.0.0.1:8000/knowledge-base/search?q=how%20do%20I%20reset%20my%20password&limit=3"
+curl -X GET "http://127.0.0.1:8000/knowledge-base/search?q=how%20do%20I%20reset%20my%20password&limit=3" \
+  -H "Authorization: Bearer <access_token>"
 ```
 
 **Success Response (200 OK):**
@@ -260,33 +309,6 @@ curl -X GET "http://127.0.0.1:8000/knowledge-base/search?q=how%20do%20I%20reset%
       "article_slug": "password-reset-and-login-issues",
       "chunk_text": "Password Requirements",
       "similarity_score": 0.7947
-    },
-    {
-      "article_title": "Password Reset and Login Issues",
-      "article_slug": "password-reset-and-login-issues",
-      "chunk_text": "Admin: Resetting a User's Password\n\nAdmins can trigger a password reset for any user in the workspace:\n\n1. Go to Settings → Team → Members.\n2. Find the user and click Actions → Send Password Reset.\n3. TeamFlow will email a reset link directly to the user.\n\nAdmins cannot view or set passwords directly — only the user can set their own password via the reset link.",
-      "similarity_score": 0.7897
-    }
-  ]
-}
-```
-
-**Error Response (400 Bad Request - Empty Query):**
-```json
-{
-  "detail": "Query parameter 'q' must not be empty or whitespace."
-}
-```
-
-**Error Response (422 Unprocessable Entity - Invalid Limit):**
-```json
-{
-  "detail": [
-    {
-      "loc": ["query", "limit"],
-      "msg": "ensure this value is less than or equal to 20",
-      "type": "value_error.number.not_le",
-      "ctx": { "limit_value": 20 }
     }
   ]
 }
@@ -297,98 +319,26 @@ curl -X GET "http://127.0.0.1:8000/knowledge-base/search?q=how%20do%20I%20reset%
 ## 🤖 Agent API
 
 ### 1. Ask a Question (RAG Pipeline)
-Submit a natural language question to be processed by the RAG (Retrieval-Augmented Generation) pipeline. The system queries the knowledge base using semantic search, filters results using the similarity threshold, constructs a prompt grounded in the relevant context, and calls Grok to generate an answer.
+Submit a question to the agent. Requires `Authorization` header.
 
 **Request:**
 ```bash
 curl -X POST "http://127.0.0.1:8000/agent/ask" \
+  -H "Authorization: Bearer <access_token>" \
   -H "Content-Type: application/json" \
   -d '{
     "question": "How do I reset my password?"
   }'
 ```
 
-**Success Response (200 OK - Answer Found):**
-```json
-{
-  "answer": "To reset your password:\n\n1. Go to the TeamFlow login page at app.teamflow.io/login.\n2. Click **Forgot your password?** below the sign-in form.\n3. Enter your registered email address and click **Send Reset Link**.\n4. Check your inbox for an email from noreply@teamflow.io (it may take up to 2 minutes).\n5. Click the reset link in the email (valid for 30 minutes).\n6. Enter and confirm your new password, then click **Reset Password**.\n7. Sign in with your new password on the login page.\n\nIf you don't see the email, check your Spam/Junk folder. Expired links can be replaced by requesting a new one.",
-  "sources": [
-    "password-reset-and-login-issues",
-    "api-rate-limits-and-authentication"
-  ]
-}
-```
+---
 
-**Success Response (200 OK - Fallback Answer / Below Threshold):**
-If no knowledge base chunks meet the similarity threshold configured via `RAG_SIMILARITY_THRESHOLD` (e.g. 0.75), the agent will return the configured fallback answer.
+## 🏥 Health Check
+
+### 1. Check Service Health
+Unprotected diagnostics route.
 
 **Request:**
 ```bash
-curl -X POST "http://127.0.0.1:8000/agent/ask" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "question": "What is the capital of France?"
-  }'
+curl -X GET "http://127.0.0.1:8000/health"
 ```
-
-**Response:**
-```json
-{
-  "answer": "I'm sorry, I couldn't find relevant information in the knowledge base to answer your question. You may need to submit a support ticket for further assistance.",
-  "sources": []
-}
-```
-
-**Error Response (422 Unprocessable Entity - Empty or Whitespace-only Question):**
-The request body is validated to ensure that the question is neither empty nor consists solely of whitespace.
-
-**Request:**
-```bash
-curl -X POST "http://127.0.0.1:8000/agent/ask" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "question": "   "
-  }'
-```
-
-**Response:**
-```json
-{
-  "detail": [
-    {
-      "type": "value_error",
-      "loc": [
-        "body",
-        "question"
-      ],
-      "msg": "Value error, Question cannot be empty or consist only of whitespace.",
-      "input": "   "
-    }
-  ]
-}
-```
-
-### 2. Stateful Conversation (Memory & Persistence)
-To maintain conversation history across multiple requests, include a `thread_id` in your request body. The agent will use this to recall prior context, and the history is safely persisted in the PostgreSQL database so it survives server restarts.
-
-**Request (First Turn):**
-```bash
-curl -X POST "http://127.0.0.1:8000/agent/ask" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "question": "What is the refund policy?",
-    "thread_id": "user-session-123"
-  }'
-```
-
-**Request (Follow-up Turn):**
-```bash
-curl -X POST "http://127.0.0.1:8000/agent/ask" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "question": "Could you explain that shorter?",
-    "thread_id": "user-session-123"
-  }'
-```
-*(The agent will automatically rewrite the follow-up question into a standalone query—e.g., "Could you explain the refund policy shorter?"—using the conversation history before retrieving context, ensuring highly accurate answers.)*
-

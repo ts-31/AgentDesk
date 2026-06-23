@@ -5,8 +5,13 @@ from uuid import UUID
 from database import get_db
 from models import Invoice
 from schemas import InvoiceBase, InvoiceResponse
+from auth.dependencies import get_current_user
 
-router = APIRouter(prefix="/invoices", tags=["Invoices"])
+router = APIRouter(
+    prefix="/invoices",
+    tags=["Invoices"],
+    dependencies=[Depends(get_current_user)]
+)
 
 
 @router.get("", response_model=List[InvoiceResponse])

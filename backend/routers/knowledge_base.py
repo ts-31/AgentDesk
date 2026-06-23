@@ -3,8 +3,13 @@ from sqlalchemy.orm import Session
 from database import get_db
 from search.retriever import semantic_search
 from schemas.knowledge_base import KnowledgeSearchResponse, KnowledgeSearchResult
+from auth.dependencies import get_current_user
 
-router = APIRouter(prefix="/knowledge-base", tags=["Knowledge Base"])
+router = APIRouter(
+    prefix="/knowledge-base",
+    tags=["Knowledge Base"],
+    dependencies=[Depends(get_current_user)]
+)
 
 
 @router.get("/search", response_model=KnowledgeSearchResponse)

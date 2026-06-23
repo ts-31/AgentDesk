@@ -12,8 +12,13 @@ from schemas import (
     InvoiceResponse,
     TicketResponse,
 )
+from auth.dependencies import get_current_user
 
-router = APIRouter(prefix="/customers", tags=["Customers"])
+router = APIRouter(
+    prefix="/customers",
+    tags=["Customers"],
+    dependencies=[Depends(get_current_user)]
+)
 
 
 def _get_customer_or_404(customer_id: UUID, db: Session) -> Customer:

@@ -5,8 +5,13 @@ from uuid import UUID
 from database import get_db
 from models import Subscription
 from schemas import SubscriptionBase, SubscriptionResponse
+from auth.dependencies import get_current_user
 
-router = APIRouter(prefix="/subscriptions", tags=["Subscriptions"])
+router = APIRouter(
+    prefix="/subscriptions",
+    tags=["Subscriptions"],
+    dependencies=[Depends(get_current_user)]
+)
 
 
 @router.get("", response_model=List[SubscriptionResponse])

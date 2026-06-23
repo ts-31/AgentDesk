@@ -5,8 +5,13 @@ from uuid import UUID
 from database import get_db
 from models import Ticket, Customer, User
 from schemas import TicketBase, TicketCreate, TicketResponse
+from auth.dependencies import get_current_user
 
-router = APIRouter(prefix="/tickets", tags=["Tickets"])
+router = APIRouter(
+    prefix="/tickets",
+    tags=["Tickets"],
+    dependencies=[Depends(get_current_user)]
+)
 
 
 @router.get("", response_model=List[TicketResponse])
