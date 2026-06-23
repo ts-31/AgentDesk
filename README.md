@@ -65,17 +65,26 @@ There is no intent classifier. The LLM receives a system prompt listing all avai
 
 ## 🛠️ Tech Stack
 
-| Layer | Technology |
+### 🤖 AI & Agent Layer
+
+| Component | Technology | Role |
+|---|---|---|
+| **Agent Orchestration** | [LangGraph](https://github.com/langchain-ai/langgraph) | Compiles and runs the stateful ReAct graph (`agent → tools → agent` loop) |
+| **LLM Integration** | [LangChain-xAI](https://python.langchain.com/docs/integrations/providers/xai/) (`langchain-xai`) | Binds Grok to LangChain's tool-calling interface via `bind_tools()` |
+| **Tool & Prompt Abstractions** | [LangChain Core](https://python.langchain.com/docs/concepts/) (`langchain-core`) | `@tool` decorator, `ChatPromptTemplate`, `BaseMessage` types, `InjectedToolArg` |
+| **Conversation Memory** | [langgraph-checkpoint-postgres](https://langchain-ai.github.io/langgraph/concepts/persistence/) | Persists `AgentState` per `thread_id` in PostgreSQL for multi-turn memory |
+| **LLM** | Grok (`grok-4.3` via xAI API) | Powers both the ReAct reasoning loop and internal query rewriting inside `retrieve_kb` |
+| **Embeddings** | `sentence-transformers` (local, no API cost) | Encodes KB chunks and queries into vectors for semantic similarity search |
+| **Vector Store** | PostgreSQL + `pgvector` | Stores and queries document embeddings with cosine similarity |
+
+### 🏗️ Application Layer
+
+| Component | Technology |
 |---|---|
-| **LLM** | Grok (`langchain-xai`) |
-| **Agent Orchestration** | LangGraph |
-| **Embeddings** | `sentence-transformers` (local) |
-| **Vector Store** | PostgreSQL + `pgvector` |
-| **Memory / Checkpointing** | `langgraph-checkpoint-postgres` |
-| **Backend API** | FastAPI + SQLAlchemy |
-| **Authentication** | JWT (`python-jose`) + bcrypt |
+| **Backend API** | FastAPI + SQLAlchemy + Pydantic |
+| **Authentication** | Stateless JWT (HS256) — `python-jose` + `bcrypt` |
+| **Database** | PostgreSQL (Docker via `docker-compose`) |
 | **Frontend** | React 19 + TypeScript + Vite + Tailwind CSS |
-| **Database** | PostgreSQL (Docker) |
 
 ---
 
