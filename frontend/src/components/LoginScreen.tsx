@@ -1,22 +1,30 @@
-import { ArrowRight, EyeOff, Lock, Mail, Loader2 } from 'lucide-react';
+import { ArrowRight, EyeOff, Eye, Lock, Mail, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 
-interface LoginScreenProps {
-  onLogin: () => void;
-}
+export default function LoginScreen() {
+  const { login } = useAuth();
 
-export default function LoginScreen({ onLogin }: LoginScreenProps) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     setIsLoggingIn(true);
-    // Simulate network delay
-    setTimeout(() => {
-      onLogin();
-    }, 1200);
+    try {
+      await login(email, password);
+      // AuthContext sets isLoggedIn → App re-renders to SupportScreen.
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login failed. Please try again.');
+    } finally {
+      setIsLoggingIn(false);
+    }
   };
 
   return (
@@ -61,6 +69,8 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
                 <input 
                   type="email" 
                   required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@company.com"
                   className="w-full bg-background border border-outline-variant/40 rounded-lg py-3 pl-12 pr-4 text-sm text-on-surface placeholder:text-outline-variant/60 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all duration-200"
                 />
@@ -80,13 +90,19 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
               <div className="relative group">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-outline-variant transition-colors group-focus-within:text-primary" />
                 <input 
-                  type="password" 
+                  type={showPassword ? 'text' : 'password'}
                   required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   className="w-full bg-background border border-outline-variant/40 rounded-lg py-3 pl-12 pr-12 text-sm text-on-surface placeholder:text-outline-variant/60 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all duration-200"
                 />
-                <button type="button" className="absolute right-4 top-1/2 -translate-y-1/2 text-outline-variant hover:text-on-surface transition-colors">
-                  <EyeOff className="w-5 h-5" />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-outline-variant hover:text-on-surface transition-colors"
+                >
+                  {showPassword ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
                 </button>
               </div>
             </div>
@@ -101,6 +117,17 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
               </div>
               <span className="text-sm text-on-surface-variant">Remember this device</span>
             </div>
+
+            {/* Inline Error */}
+            {error && (
+              <motion.p
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-sm text-error text-center"
+              >
+                {error}
+              </motion.p>
+            )}
 
             {/* Submit Button */}
             <button 

@@ -1,7 +1,7 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import {defineConfig} from 'vite';
+import { defineConfig } from 'vite';
 
 export default defineConfig(() => {
   return {
@@ -13,10 +13,21 @@ export default defineConfig(() => {
     },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
+      // Do not modify — file watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',
       // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
+
+      // Dev proxy: forwards /api/* → http://127.0.0.1:8000/*
+      // This avoids CORS issues during local development and means the
+      // frontend never hard-codes the backend address — only VITE_API_BASE_URL matters.
+      proxy: {
+        '/api': {
+          target: 'http://127.0.0.1:8000',
+          changeOrigin: true,
+          rewrite: (p) => p.replace(/^\/api/, ''),
+        },
+      },
     },
   };
 });

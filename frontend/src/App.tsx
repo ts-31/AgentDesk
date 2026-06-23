@@ -1,17 +1,16 @@
-import { useState } from 'react';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import LoginScreen from './components/LoginScreen';
 import SupportScreen from './components/SupportScreen';
 
-export default function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+function AppContent() {
+  const { isLoggedIn } = useAuth();
+  return isLoggedIn ? <SupportScreen /> : <LoginScreen />;
+}
 
+export default function App() {
   return (
-    <>
-      {isLoggedIn ? (
-        <SupportScreen />
-      ) : (
-        <LoginScreen onLogin={() => setIsLoggedIn(true)} />
-      )}
-    </>
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
