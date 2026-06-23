@@ -17,9 +17,10 @@ Sources are embedded as "[Source: slug]" headers so chain.py can parse them
 without any additional state fields.
 """
 
+from typing import Annotated
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain_core.runnables import RunnableConfig
-from langchain_core.tools import tool
+from langchain_core.tools import tool, InjectedToolArg
 
 from agent.llm import get_llm
 from agent.prompt import REWRITE_PROMPT
@@ -28,7 +29,7 @@ from search.retriever import PgVectorRetriever
 
 
 @tool
-def retrieve_kb(query: str, config: RunnableConfig) -> str:
+def retrieve_kb(query: str, config: Annotated[RunnableConfig, InjectedToolArg]) -> str:
     """Search the TeamFlow knowledge base for documentation, how-tos, feature
     explanations, API rate limits, subscription plans, billing policies, and
     support articles. Use this whenever the user asks about how the platform

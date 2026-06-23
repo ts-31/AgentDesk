@@ -12,6 +12,9 @@ class User(Base):
     email = Column(String, nullable=False, unique=True)
     role = Column(String, nullable=False, default="Member")
     sso_enabled = Column(Boolean, default=False)
+    # Stores a bcrypt hash of the user's password.
+    # nullable=True for safe migration of existing rows; tighten after all rows are seeded.
+    password_hash = Column(String, nullable=True)
 
     customer = relationship("Customer", back_populates="users")
     tickets = relationship("Ticket", back_populates="user")

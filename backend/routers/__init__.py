@@ -1,3 +1,4 @@
+from .auth import router as auth_router
 from .customers import router as customers_router
 from .users import router as users_router
 from .subscriptions import router as subscriptions_router

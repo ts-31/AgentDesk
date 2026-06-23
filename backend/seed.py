@@ -1,10 +1,13 @@
 import random
 from faker import Faker
 from datetime import timedelta
+from passlib.context import CryptContext
 from database import SessionLocal
 from models import Customer, User, Subscription, Invoice, Ticket
 
 fake = Faker()
+_pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+_DEFAULT_PASSWORD_HASH = _pwd_context.hash("changeme123")
 
 def seed_database():
     db = SessionLocal()
@@ -27,7 +30,7 @@ def seed_database():
         db.commit()
 
         # 2. Generate 100 Users
-        print("Seeding 100 Users...")
+        print("Seeding 100 Users (default password: changeme123)...")
         users = []
         roles = ["Admin", "Member", "Guest"]
         for _ in range(100):
@@ -36,7 +39,8 @@ def seed_database():
                 customer_id=customer.customer_id,
                 email=fake.unique.email(),
                 role=random.choice(roles),
-                sso_enabled=fake.boolean(chance_of_getting_true=25)
+                sso_enabled=fake.boolean(chance_of_getting_true=25),
+                password_hash=_DEFAULT_PASSWORD_HASH,
             )
             db.add(user)
             users.append(user)

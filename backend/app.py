@@ -2,6 +2,7 @@ import logging
 from fastapi import FastAPI
 from core.lifespan import lifespan
 from routers import (
+    auth_router,
     customers_router,
     users_router,
     subscriptions_router,
@@ -15,6 +16,7 @@ logging.basicConfig(level=logging.INFO)
 
 app = FastAPI(title="AgentDesk API", lifespan=lifespan)
 
+app.include_router(auth_router)
 app.include_router(customers_router)
 app.include_router(users_router)
 app.include_router(subscriptions_router)

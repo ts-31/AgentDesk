@@ -1,35 +1,36 @@
 """
-subscriptions.py — LangChain tool for retrieving a customer's subscriptions.
+subscriptions.py — LangChain tool for retrieving the authenticated customer's subscriptions.
 
-Validates that the customer exists, then returns all associated
-subscriptions as a list of plain dicts.
+Post-auth: customer_id is sourced directly from AgentContext (JWT payload).
+The tool no longer accepts customer_id as a parameter.
 """
 
 from typing import Annotated
-from uuid import UUID
-
 from langchain_core.runnables import RunnableConfig
-from langchain_core.tools import tool
-
-from models import Customer, Subscription
+from langchain_core.tools import tool, InjectedToolArg
 
 
 @tool
-def get_customer_subscriptions(
-    customer_id: str,
-    config: RunnableConfig,
-) -> dict | str:
-    """Retrieve all subscriptions for a given customer. Returns plan tier, billing cycle, status, and renewal info."""
+def get_customer_subscriptions(config: Annotated[RunnableConfig, InjectedToolArg]) -> dict | str:
+    """Retrieve all subscriptions for the authenticated customer. Returns plan tier, billing cycle, status, and renewal info."""
+    ctx = config["configurable"]["__pregel_runtime"].context
+    db = ctx.db
+    customer_id = ctx.customer_id
+
+    if not customer_id:
+        return "No authenticated customer context available."
+
+    from uuid import UUID
+    from models import Customer, Subscription
+
     try:
         cid = UUID(customer_id)
     except ValueError:
-        return f"Invalid UUID format: '{customer_id}'."
+        return f"Invalid customer_id in auth context: '{customer_id}'."
 
-    db = config["configurable"]["__pregel_runtime"].context.db
     customer = db.query(Customer).filter(Customer.customer_id == cid).first()
-
     if not customer:
-        return f"Customer with ID {customer_id} not found."
+        return "Customer record not found."
 
     subs = db.query(Subscription).filter(Subscription.customer_id == cid).all()
 

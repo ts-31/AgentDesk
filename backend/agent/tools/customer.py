@@ -1,36 +1,38 @@
 """
-customer.py — LangChain tool for looking up a customer by UUID.
+customer.py — LangChain tool for looking up the authenticated customer.
 
-Uses the SQLAlchemy session from Runtime[RAGContext] (injected via
-InjectedToolArg) to query the Customer model directly.  Returns a
-plain dict — never a SQLAlchemy instance or HTTP exception.
+Post-auth: customer_id is sourced directly from AgentContext (JWT payload).
+The tool no longer accepts customer_id as a parameter, so the LLM will
+never need to ask the user for it.
 """
 
 from typing import Annotated
-from uuid import UUID
-
 from langchain_core.runnables import RunnableConfig
-from langchain_core.tools import tool
-
-from models import Customer
+from langchain_core.tools import tool, InjectedToolArg
 
 
 @tool
-def get_customer(
-    customer_id: str,
-    config: RunnableConfig,
-) -> dict | str:
-    """Look up a customer by their UUID. Returns company name, plan type, and creation date."""
+def get_customer(config: Annotated[RunnableConfig, InjectedToolArg]) -> dict | str:
+    """Look up the authenticated customer's account. Returns company name, plan type, and creation date."""
+    ctx = config["configurable"]["__pregel_runtime"].context
+    db = ctx.db
+    customer_id = ctx.customer_id
+
+    if not customer_id:
+        return "No authenticated customer context available."
+
+    from uuid import UUID
+    from models import Customer
+
     try:
         cid = UUID(customer_id)
     except ValueError:
-        return f"Invalid UUID format: '{customer_id}'."
+        return f"Invalid customer_id in auth context: '{customer_id}'."
 
-    db = config["configurable"]["__pregel_runtime"].context.db
     customer = db.query(Customer).filter(Customer.customer_id == cid).first()
 
     if not customer:
-        return f"Customer with ID {customer_id} not found."
+        return "Customer record not found."
 
     return {
         "customer_id": str(customer.customer_id),

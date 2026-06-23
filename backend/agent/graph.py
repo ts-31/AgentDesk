@@ -57,7 +57,13 @@ _TECHNICAL_FALLBACK = (
 
 @dataclass
 class AgentContext:
-    db: object  # sqlalchemy.orm.Session
+    db: object       # sqlalchemy.orm.Session
+    # Identity fields sourced from the validated JWT — populated by routers/agent.py.
+    # All are strings (not UUIDs) to stay serialization-safe.
+    user_id: str = ""       # UUID string of the authenticated user
+    customer_id: str = ""   # UUID string of the user's customer/workspace
+    user_email: str = ""    # Used for audit trails and ticket attribution
+    user_role: str = ""     # Member | Admin | Guest (reserved for future gating)
 
 
 # ---------------------------------------------------------------------------

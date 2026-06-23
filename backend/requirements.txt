@@ -14,3 +14,9 @@ langchain-xai
 langgraph
 langgraph-checkpoint-postgres
 psycopg[binary,pool]
+# Auth — bcrypt pinned to <5 for passlib 1.7.x compatibility
+passlib[bcrypt]
+bcrypt>=3.1.0,<5.0
+python-jose[cryptography]
+python-multipart
+email-validator

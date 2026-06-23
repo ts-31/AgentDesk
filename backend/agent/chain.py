@@ -27,6 +27,7 @@ import logging
 import re
 
 from langchain_core.messages import AIMessage, ToolMessage
+from langgraph.errors import GraphRecursionError
 from sqlalchemy.orm import Session
 
 from agent.graph import AgentContext, get_rag_graph
@@ -97,7 +98,15 @@ def _snapshot_prior_message_count(graph, config: dict) -> int:
         return 0
 
 
-def run_rag(question: str, db: Session, thread_id: str | None = None) -> dict:
+def run_rag(
+    question: str,
+    db: Session,
+    thread_id: str | None = None,
+    user_id: str = "",
+    customer_id: str = "",
+    user_email: str = "",
+    user_role: str = "",
+) -> dict:
     """
     Execute the ReAct agent via LangGraph and return a result dict.
 
@@ -110,12 +119,17 @@ def run_rag(question: str, db: Session, thread_id: str | None = None) -> dict:
     after the invocation, enabling multi-turn conversation memory.
 
     Args:
-        question:  The user question (already stripped and validated).
-        db:        An active SQLAlchemy session.
-        thread_id: Optional conversation identifier.  When provided,
-                   the PostgresSaver checkpointer replays and persists
-                   messages for that thread.  When None, the graph runs
-                   statelessly.
+        question:    The user question (already stripped and validated).
+        db:          An active SQLAlchemy session.
+        thread_id:   Optional conversation identifier.  When provided,
+                     the PostgresSaver checkpointer replays and persists
+                     messages for that thread.  When None, the graph runs
+                     statelessly.
+        user_id:     UUID string of the authenticated user (from JWT).
+        customer_id: UUID string of the user's customer/workspace (from JWT).
+                     CRM tools read this directly — no need to ask the user.
+        user_email:  Authenticated user's email (from JWT).
+        user_role:   Authenticated user's role, e.g. "Member" (from JWT).
 
     Returns:
         {"answer": str, "sources": list[str]}
@@ -133,6 +147,9 @@ def run_rag(question: str, db: Session, thread_id: str | None = None) -> dict:
     graph = get_rag_graph(with_memory=bool(thread_id))
 
     config: dict = {"configurable": {"thread_id": thread_id}} if thread_id else {}
+    # Hard circuit breaker: limit the ReAct loop to 5 internal steps to prevent
+    # infinite LLM retries (and API credit drain) on systemic tool errors.
+    config["recursion_limit"] = 5
 
     # Snapshot how many messages are already in the checkpoint BEFORE this
     # invocation so we can slice off only the new messages afterwards.
@@ -142,8 +159,26 @@ def run_rag(question: str, db: Session, thread_id: str | None = None) -> dict:
         result = graph.invoke(
             {"question": question, "messages": []},
             config=config,
-            context=AgentContext(db=db),
+            context=AgentContext(
+                db=db,
+                user_id=user_id,
+                customer_id=customer_id,
+                user_email=user_email,
+                user_role=user_role,
+            ),
         )
+    except GraphRecursionError:
+        logger.warning("Graph recursion limit reached. Halting ReAct loop to protect API credits.")
+        # We don't raise an error here. By catching it, we let the code below
+        # extract whatever partial answer or tool messages were generated before
+        # the loop was forcibly terminated.
+        result = {}
+        if thread_id:
+            # Attempt to pull the current state from memory since invoke() aborted.
+            try:
+                result = graph.get_state(config).values
+            except Exception:
+                pass
     except Exception as exc:
         logger.error("LangGraph ReAct graph invocation failed: %s", exc)
         raise RuntimeError(f"LLM generation error: {exc}") from exc
