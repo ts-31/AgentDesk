@@ -1,77 +1,89 @@
 # TeamFlow Agent Architecture
 
-The TeamFlow backend uses **LangGraph** to orchestrate its hybrid agent architecture. The agent handles both Retrieval-Augmented Generation (RAG) for knowledge base queries and specific CRM operations via tools. It features conversational memory and intelligent query routing to ensure accurate and context-aware responses.
+The TeamFlow backend uses **LangGraph** to orchestrate a **ReAct (Reason + Act)** agent. The agent handles all query types — knowledge base lookups, CRM data retrieval, and live actions — within a single unified reasoning loop. There is no upfront intent classification or branching.
 
 ---
 
-## 🗺️ High-Level Topology
+## 🗺️ Graph Topology
 
-The graph utilizes an LLM-based intent classifier as the entry point, branching into a strict linear (acyclic) topology for either RAG or Tools execution:
+The graph is a standard ReAct loop: the LLM reasons at every step and decides whether to call a tool or produce a final answer.
 
 ```mermaid
 graph TD
-    START((START)) --> classify[classify_intent]
-    
-    classify -- "rag" --> rewrite[rewrite_node]
-    rewrite --> retrieve[retrieve_node]
-    retrieve --> generate[generate_node]
-    generate --> END((END))
-    
-    classify -- "tools" --> tool_agent[tool_agent_node]
-    tool_agent -- "tools_condition" --> tools[ToolNode]
-    tools --> tool_synthesize[tool_synthesize_node]
-    tool_agent -- "no tool calls" --> tool_synthesize
-    tool_synthesize --> END
+    START((START)) --> agent[agent\nreact_agent_node]
+
+    agent -- "tool_calls present" --> tools[tools\nToolNode]
+    tools --> agent
+
+    agent -- "no tool_calls" --> END((END))
 ```
 
-### 1. `START` & Intent Classification (`classify_node`)
-The entry point of the graph. The graph is initialized with the raw user `question`. The classifier node uses structured output to strictly categorize the query's intent into `rag` or `tools` and saves it to the state. 
+### How it works
 
-### 2. The RAG Branch (`rag`)
-If the intent is general platform knowledge or support documentation:
-- **Rewrite Node (`rewrite_node`)**: Evaluates conversational history. If history exists, rewrites the question into a standalone query.
-- **Retrieve Node (`retrieve_node`)**: Executes semantic vector search against the PostgreSQL `pgvector` database and retrieves document chunks.
-- **Generate Node (`generate_node`)**: Synthesizes the final answer using Grok, citations, and appends the final turn to the conversation memory.
+1. **`START` → `agent`**: The user's question is added to the message history as a `HumanMessage` and passed to the LLM. The LLM is bound with all available tools and a system prompt that explains when to use each one.
 
-### 3. The Tools Branch (`tools`)
-If the intent requires looking up specific CRM data (e.g., invoices, tickets, customer data):
-- **Tool Agent Node (`tool_agent_node`)**: Evaluates the question and conversational history to generate explicit tool calls utilizing `bind_tools(ALL_TOOLS)`.
-- **Tools Node (`ToolNode`)**: A standard LangGraph prebuilt node that executes the requested python functions against the PostgreSQL database.
-- **Synthesize Node (`tool_synthesize_node`)**: Receives the raw tool outputs and synthesizes a clean, user-friendly final response.
+2. **`agent` → `tools`** *(conditional)*: If the LLM's response contains one or more `tool_calls`, LangGraph's `tools_condition` routes execution to the `ToolNode`, which executes the requested tool functions and appends `ToolMessage` results back to the message history.
 
-### 4. `END`
-The graph execution concludes. If a `thread_id` was provided, the checkpointer automatically saves the updated state (including new `messages` and tool outputs) back to PostgreSQL for the next turn.
+3. **`tools` → `agent`** *(loop)*: After tool execution, control returns to the `agent` node. The LLM re-reasons with the updated history — it may call more tools or produce a final answer.
+
+4. **`agent` → `END`**: When the LLM produces an `AIMessage` with no `tool_calls`, `tools_condition` routes to `END`. The final answer is the content of this last `AIMessage`.
+
+A hard **recursion limit of 5 steps** acts as a circuit breaker to prevent runaway LLM loops.
 
 ---
 
-## 🗃️ State Management
+## 🧰 Tools
 
-Information flowing through the graph is strictly typed via the `AgentState` `TypedDict`.
+All tools are registered in `agent/tools/__init__.py` as `ALL_TOOLS` and bound to the LLM in the agent node. The LLM selects which tools to call based solely on its own reasoning.
+
+| Tool | Description |
+|---|---|
+| `retrieve_kb` | Searches the pgvector knowledge base. Internally rewrites the query for multi-turn follow-ups before hitting the vector store. |
+| `get_customer` | Fetches the authenticated customer's account details. |
+| `get_customer_invoices` | Retrieves all invoices for the authenticated customer. |
+| `get_customer_subscriptions` | Retrieves subscription details for the authenticated customer. |
+| `get_customer_tickets` | Retrieves all support tickets for the authenticated customer. |
+| `create_ticket` | Creates a new support ticket attributed to the authenticated user. |
+
+### `retrieve_kb` in detail
+
+RAG is not a separate graph branch — it is encapsulated entirely inside the `retrieve_kb` tool (`agent/tools/knowledge_base.py`):
+
+1. **Query rewriting**: The tool reads the current message history and uses `REWRITE_PROMPT` to rewrite conversational follow-up questions into standalone search queries. For first-turn or already-standalone questions, the rewrite is idempotent.
+2. **Vector retrieval**: The rewritten query is passed to `PgVectorRetriever`, which runs a cosine similarity search against the `pgvector` index. Results below `RAG_SIMILARITY_THRESHOLD` are discarded.
+3. **Return**: The tool returns a formatted string of chunks with `[Source: slug]` headers. The LLM reads this as a `ToolMessage` and synthesizes the final answer in its next reasoning step.
+
+This means the LLM can combine CRM data and knowledge base results in a single turn by calling multiple tools before producing its answer.
+
+---
+
+## 🗃️ State
+
+`AgentState` is intentionally minimal — only two fields:
 
 ```python
 class AgentState(TypedDict):
-    question: str             # The raw user input
-    intent: str               # The routed intent ("rag" or "tools")
-    search_query: str         # The standalone query (RAG branch)
-    docs: list[Document]      # KB chunks (RAG branch)
-    answer: str               # The LLM generated answer (Both branches)
-    sources: list[str]        # Array of article slugs (Both branches)
-    
-    # Reducer that appends new messages across turns
-    messages: Annotated[list[BaseMessage], add_messages]
+    question: str                                        # Original user question (fallback reference)
+    messages: Annotated[list[BaseMessage], add_messages] # Full message history — the sole data conduit
 ```
 
+Fields from the previous architecture (`intent`, `search_query`, `docs`, `answer`, `sources`) are removed. The final answer and sources are extracted from the message list **after** `graph.invoke()` returns in `chain.py`:
+- **Answer**: the content of the last `AIMessage` in the current turn's messages.
+- **Sources**: `[Source: slug]` headers parsed from any `retrieve_kb` `ToolMessage`s in the current turn.
+
 ### Separation of State and Infrastructure
-Database connection sessions (`Session`) are explicitly excluded from `AgentState` because they cannot be JSON-serialized for checkpointing. Instead, infrastructure dependencies are passed into the nodes dynamically using LangGraph's **Runtime Context API** (`Runtime[AgentContext]`).
+
+The SQLAlchemy `Session` and JWT identity fields (`user_id`, `customer_id`, `user_email`, `user_role`) are passed via LangGraph's **Runtime Context API** (`AgentContext` dataclass) rather than stored in `AgentState`. This keeps state JSON-serializable for the PostgreSQL checkpointer.
 
 ---
 
 ## 🧠 Memory and Persistence
 
-To facilitate multi-turn conversations, TeamFlow uses the `langgraph-checkpoint-postgres` library. 
+Multi-turn conversation memory is implemented using `langgraph-checkpoint-postgres`.
 
-1. **Initialization:** During server startup, a process-scoped `ConnectionPool` is established in `agent/memory.py`.
-2. **Execution:** When the `/agent/ask` API receives a `thread_id`, the graph compiles with the `PostgresSaver`. 
-3. **Replay & Persist:** LangGraph automatically pulls prior messages from the database before `START` and saves the updated state upon reaching `END`.
+1. **Initialization**: During server startup, a process-scoped `ConnectionPool` is established in `agent/memory.py`.
+2. **Execution**: When `POST /agent/ask` receives a `thread_id`, the graph is compiled with a `PostgresSaver` checkpointer. LangGraph replays all prior `messages` for that thread before `START`.
+3. **Persistence**: On reaching `END`, LangGraph automatically writes the updated message list back to the checkpoint table.
+4. **Stateless mode**: If no `thread_id` is provided, the graph is compiled without a checkpointer and runs fully statelessly.
 
-If a request arrives without a `thread_id`, the graph runs fully statelessly.
+To prevent sources from prior turns bleeding into the current turn's response, `chain.py` snapshots the message count **before** `graph.invoke()` and slices only the new messages afterwards.
