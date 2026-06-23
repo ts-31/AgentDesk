@@ -1,20 +1,24 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# TeamFlow Frontend
 
-# Run and deploy your AI Studio app
+This is the React + Vite frontend for TeamFlow, integrated directly with the FastAPI backend.
 
-This contains everything you need to run your app locally.
+## Architecture & Integration
 
-View your app in AI Studio: https://ai.studio/apps/ccbb60d5-f7f5-498c-a624-b62cea451e99
+The frontend connects to the backend via a centralized API client (`src/api/client.ts`).
+* **Auth**: Uses JWTs stored in `localStorage`. The API client automatically attaches `Bearer` tokens and handles silent token refreshes via the `/auth/refresh` endpoint on 401s.
+* **Proxy**: During development, Vite is configured (`vite.config.ts`) to proxy all requests starting with `/api` to `http://127.0.0.1:8000`. This prevents CORS issues and keeps API paths clean.
 
 ## Run Locally
 
-**Prerequisites:**  Node.js
+**Prerequisites:** Node.js, and the TeamFlow backend must be running on port 8000.
 
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+1. Ensure the backend is running (`uvicorn app:app --reload --port 8000` from the backend dir).
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Run the dev server:
+   ```bash
+   npm run dev
+   ```
+4. Open `http://localhost:3000`. You can log in using the mock credentials seeded by the backend (`seed.py`).

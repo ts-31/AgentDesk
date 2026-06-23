@@ -7,11 +7,7 @@ TeamFlow is a customer support backend built with FastAPI, PostgreSQL, `pgvector
 ```text
 backend/
 ├── agent/              # Grok-based RAG answer generation logic
-│   ├── chain.py        # Entry point for RAG execution
-│   ├── graph.py        # LangGraph workflow (rewrite, retrieve, generate)
-│   ├── llm.py          # LLM client initialization
-│   ├── memory.py       # PostgreSQL checkpointer for graph state memory
-│   └── prompt.py       # Prompt templates for RAG and query rewriting
+├── auth/               # JWT authentication and hashing utilities
 ├── core/               # Core configurations and application setup
 ├── docs/               # API examples and documentation
 ├── indexing/           # Knowledge base document processing and embedding logic
@@ -21,11 +17,14 @@ backend/
 ├── routers/            # FastAPI route handlers (API endpoints)
 ├── schemas/            # Pydantic validation schemas
 ├── search/             # Vector similarity search and retrieval implementation
-├── app.py              # FastAPI application initialization
+├── app.py              # FastAPI application initialization (CORS configured for frontend)
 ├── database.py         # Database connection and session management
 ├── docker-compose.yml  # PostgreSQL database container configuration
 └── start.sh            # Entrypoint script to handle Docker, DB, and server startup
 ```
+
+## Integration with Frontend
+The backend is configured with `CORSMiddleware` in `app.py` to accept requests from the frontend at `http://localhost:3000` by default. You can override the allowed origins in production by setting the `ALLOWED_ORIGINS` environment variable (e.g. `ALLOWED_ORIGINS=https://app.teamflow.io,https://admin.teamflow.io`).
 
 ## Setup & Run
 
