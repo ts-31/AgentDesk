@@ -1,4 +1,4 @@
-# auth — JWT authentication utilities for TeamFlow.
+# auth — JWT authentication utilities for AgentDesk.
 #
 # Modules:
 #   hashing.py      — bcrypt password hashing / verification

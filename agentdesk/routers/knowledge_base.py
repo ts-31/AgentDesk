@@ -19,7 +19,7 @@ def search_knowledge_base(
     db: Session = Depends(get_db),
 ):
     """
-    Perform semantic search against the TeamFlow knowledge base.
+    Perform semantic search against the AgentDesk knowledge base.
 
     Embeds the query using BGE-small and returns the top matching
     chunks ranked by cosine similarity.

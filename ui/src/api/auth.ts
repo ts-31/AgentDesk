@@ -1,5 +1,5 @@
 /**
- * auth.ts — Login and logout functions for TeamFlow.
+ * auth.ts — Login and logout functions for AgentDesk.
  *
  * login()  → POST /auth/login, stores tokens in localStorage.
  * logout() → POST /auth/logout (fire-and-forget), clears localStorage.

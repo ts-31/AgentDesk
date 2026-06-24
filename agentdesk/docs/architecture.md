@@ -1,6 +1,6 @@
-# TeamFlow Agent Architecture
+# AgentDesk Agent Architecture
 
-The TeamFlow backend uses **LangGraph** to orchestrate a **ReAct (Reason + Act)** agent. The agent handles all query types — knowledge base lookups, CRM data retrieval, and live actions — within a single unified reasoning loop. There is no upfront intent classification or branching.
+The AgentDesk backend uses **LangGraph** to orchestrate a **ReAct (Reason + Act)** agent. The agent handles all query types — knowledge base lookups, CRM data retrieval, and live actions — within a single unified reasoning loop. There is no upfront intent classification or branching.
 
 ---
 
@@ -92,7 +92,7 @@ To prevent sources from prior turns bleeding into the current turn's response, `
 
 ## 👁️ Observability & Tracing
 
-TeamFlow uses **LangSmith** for zero-code telemetry and execution tracing. 
+AgentDesk uses **LangSmith** for zero-code telemetry and execution tracing. 
 
 Because the agent is built natively on `langchain-core` and `langgraph`, LangSmith automatically intercepts and traces the entire ReAct loop without requiring explicit decorators or tracking code inside the agent logic.
 

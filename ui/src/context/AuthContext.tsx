@@ -1,5 +1,5 @@
 /**
- * AuthContext.tsx — Global session state for TeamFlow.
+ * AuthContext.tsx — Global session state for AgentDesk.
  *
  * Provides:
  *   isLoggedIn  — true if a valid access_token exists in localStorage.

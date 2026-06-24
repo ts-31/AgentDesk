@@ -1,5 +1,5 @@
 """
-routers/auth.py — Authentication endpoints for TeamFlow.
+routers/auth.py — Authentication endpoints for AgentDesk.
 
 Endpoints:
     POST /auth/login    — Verify email + password; issue access + refresh tokens.

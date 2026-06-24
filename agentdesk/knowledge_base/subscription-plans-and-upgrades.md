@@ -1,7 +1,7 @@
 # Subscription Plans and Upgrades
 
 **Summary:**
-An overview of TeamFlow's subscription tiers, feature differences, how to upgrade or downgrade your plan, and what happens at cancellation.
+An overview of AgentDesk's subscription tiers, feature differences, how to upgrade or downgrade your plan, and what happens at cancellation.
 
 **Tags:** subscription, plans, upgrade, downgrade, free, pro, business, enterprise, pricing, tier, cancel, renewal
 
@@ -9,7 +9,7 @@ An overview of TeamFlow's subscription tiers, feature differences, how to upgrad
 
 ## Overview
 
-TeamFlow offers four subscription tiers designed to scale with your team. Each plan unlocks additional features, seat capacity, and support levels.
+AgentDesk offers four subscription tiers designed to scale with your team. Each plan unlocks additional features, seat capacity, and support levels.
 
 ---
 
@@ -80,8 +80,8 @@ You will receive a reminder email **14 days before** your plan expires if auto-r
 
 Enterprise plans are custom-priced based on seat count, storage needs, and SLA requirements. To discuss an Enterprise plan:
 
-- Email **sales@teamflow.io**
-- Or request a call via **teamflow.io/contact-sales**
+- Email **sales@agentdesk.io**
+- Or request a call via **agentdesk.io/contact-sales**
 
 Enterprise customers receive a dedicated account manager and custom onboarding support.
 

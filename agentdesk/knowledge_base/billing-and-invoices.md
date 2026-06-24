@@ -1,7 +1,7 @@
 # Billing and Invoices
 
 **Summary:**
-A complete guide to understanding your TeamFlow billing cycle, accessing invoices, updating payment methods, and resolving common billing issues.
+A complete guide to understanding your AgentDesk billing cycle, accessing invoices, updating payment methods, and resolving common billing issues.
 
 **Tags:** billing, invoices, payment, credit card, receipts, charges, refund, billing cycle, finance
 
@@ -9,13 +9,13 @@ A complete guide to understanding your TeamFlow billing cycle, accessing invoice
 
 ## Overview
 
-TeamFlow bills customers on either a **monthly** or **annual** cycle, depending on the plan selected at signup. All charges are processed in USD and invoices are generated automatically at the start of each billing period.
+AgentDesk bills customers on either a **monthly** or **annual** cycle, depending on the plan selected at signup. All charges are processed in USD and invoices are generated automatically at the start of each billing period.
 
 ---
 
 ## Accessing Your Invoices
 
-1. Log in to your TeamFlow workspace as an **Admin** or **Billing Manager**.
+1. Log in to your AgentDesk workspace as an **Admin** or **Billing Manager**.
 2. Navigate to **Settings → Billing → Invoice History**.
 3. All invoices are listed with their status: `Paid`, `Unpaid`, or `Void`.
 4. Click **Download PDF** next to any invoice to save a copy for your records.
@@ -41,13 +41,13 @@ TeamFlow bills customers on either a **monthly** or **annual** cycle, depending 
 2. Click **Add Payment Method** and enter your new card details.
 3. Set the new card as **Default** and remove the old one if desired.
 
-> TeamFlow accepts all major credit and debit cards (Visa, Mastercard, American Express, Discover). We do not store raw card data — all payments are processed securely via Stripe.
+> AgentDesk accepts all major credit and debit cards (Visa, Mastercard, American Express, Discover). We do not store raw card data — all payments are processed securely via Stripe.
 
 ---
 
 ## Failed Payments
 
-If a payment fails, TeamFlow will:
+If a payment fails, AgentDesk will:
 
 1. Retry the charge automatically after **3 days**.
 2. Send an email notification to the billing contact.
@@ -60,9 +60,9 @@ To resolve a failed payment, update your payment method (see above) and click **
 
 ## Requesting a Refund
 
-TeamFlow offers a **7-day refund window** for annual plan purchases. To request a refund:
+AgentDesk offers a **7-day refund window** for annual plan purchases. To request a refund:
 
-- Contact support at **support@teamflow.io** within 7 days of the charge.
+- Contact support at **support@agentdesk.io** within 7 days of the charge.
 - Include your company name, invoice number, and reason for the request.
 
 Monthly plan charges are non-refundable but you can cancel at any time to stop future billing.

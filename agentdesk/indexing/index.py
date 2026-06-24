@@ -29,7 +29,7 @@ from indexing.embedder import embed_texts
 
 
 def run_indexing():
-    print("\n=== TeamFlow Knowledge Base Indexer ===\n")
+    print("\n=== AgentDesk Knowledge Base Indexer ===\n")
 
     # Ensure pgvector extension and table exist
     enable_pgvector()

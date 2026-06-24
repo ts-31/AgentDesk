@@ -1,5 +1,5 @@
 /**
- * client.ts — Auth-aware fetch wrapper for TeamFlow.
+ * client.ts — Auth-aware fetch wrapper for AgentDesk.
  *
  * Every request:
  *   1. Prepends VITE_API_BASE_URL to the path.

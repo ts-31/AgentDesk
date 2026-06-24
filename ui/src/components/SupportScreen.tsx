@@ -65,7 +65,7 @@ export default function SupportScreen() {
       <header className="fixed top-0 left-0 right-0 z-50 glass-blur border-b border-outline-variant h-16 px-6 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <img
-            alt="TeamFlow Logo"
+            alt="AgentDesk Logo"
             src="https://lh3.googleusercontent.com/aida/AP1WRLvtCSXWB2MznQZ1Q35xQfWAhQdMCzNiDlv048gWjvgjJvGXa6w8Qd3DMrTHgdRYu9L3lvr5jQgOvtgy0R-tsq7K88hyHQms2y8KLXHrVMXZ3aqX-5O85f3dBjeYxXDsA-IzljhV2brgQ7OlUsYl5QzgtzlMDgDAwjce6RC0obL7QYPY-R-2d55U-0mnTt6K1NOeMwHZCf5HwEfLruMwyzsijw4dDOY7QkAY8VztZXGNA3hTXseOwF0Sdyz6"
             className="h-8 w-auto"
           />

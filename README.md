@@ -1,6 +1,6 @@
-# TeamFlow — AI-Powered Customer Support Platform
+# AgentDesk — AI-Powered Customer Support Platform
 
-A full-stack, production-grade agentic AI application. TeamFlow is an internal customer support tool where support agents interact with a **LangGraph-orchestrated ReAct agent** that can answer questions from a knowledge base, look up live CRM data, and take actions — all decided dynamically by the LLM in a single unified reasoning loop.
+A full-stack, production-grade agentic AI application. AgentDesk is an internal customer support tool where support agents interact with a **LangGraph-orchestrated ReAct agent** that can answer questions from a knowledge base, look up live CRM data, and take actions — all decided dynamically by the LLM in a single unified reasoning loop.
 
 ---
 
@@ -146,7 +146,7 @@ Log in with any user seeded by `backend/seed.py`.
 ## 📁 Project Structure
 
 ```
-TeamFlow/
+AgentDesk/
 ├── backend/
 │   ├── agent/                  # LangGraph agent (graph, nodes, tools, memory)
 │   │   └── tools/              # CRM tool functions (tickets, invoices, subscriptions)

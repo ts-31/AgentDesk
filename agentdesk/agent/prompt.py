@@ -1,5 +1,5 @@
 """
-prompt.py — LangChain prompt templates for the TeamFlow agent.
+prompt.py — LangChain prompt templates for the AgentDesk agent.
 
 Templates:
   RAG_PROMPT      — Used inside retrieve_kb to format KB excerpts for the LLM.
@@ -19,7 +19,7 @@ Templates:
 from langchain_core.prompts import ChatPromptTemplate
 
 SYSTEM_PROMPT = (
-    "You are a helpful TeamFlow support assistant.\n"
+    "You are a helpful AgentDesk support assistant.\n"
     "Answer the user's question using ONLY the knowledge base excerpts provided below.\n"
     "Be concise and accurate. If the excerpts do not contain enough information, say so honestly.\n"
     "Do not make up facts not present in the excerpts."
@@ -50,7 +50,7 @@ REWRITE_PROMPT = ChatPromptTemplate.from_messages([
 # Replaces both CLASSIFY_PROMPT (removed) and TOOL_SYSTEM_PROMPT (removed).
 # The agent uses this to reason about which tools to call and in what order.
 REACT_SYSTEM_PROMPT = (
-    "You are TeamFlow's intelligent support agent. "
+    "You are AgentDesk's intelligent support agent. "
     "The user is already authenticated — you know exactly who they are. "
     "Do NOT ask for customer IDs, user IDs, UUIDs, or email addresses. "
     "All CRM tools automatically use the authenticated user's account.\n\n"

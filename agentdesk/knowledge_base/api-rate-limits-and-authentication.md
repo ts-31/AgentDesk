@@ -1,7 +1,7 @@
 # API Rate Limits and Authentication
 
 **Summary:**
-Learn how to authenticate with the TeamFlow API, manage API keys, and understand our rate-limiting policies to ensure reliable integrations.
+Learn how to authenticate with the AgentDesk API, manage API keys, and understand our rate-limiting policies to ensure reliable integrations.
 
 **Tags:** API, developer, authentication, rate limits, API keys, 429, headers, integration, webhooks
 
@@ -9,20 +9,20 @@ Learn how to authenticate with the TeamFlow API, manage API keys, and understand
 
 ## Overview
 
-The TeamFlow REST API allows you to programmatically manage workspaces, users, projects, and billing. Access to the API is available on **Pro**, **Business**, and **Enterprise** plans.
+The AgentDesk REST API allows you to programmatically manage workspaces, users, projects, and billing. Access to the API is available on **Pro**, **Business**, and **Enterprise** plans.
 
 The base URL for all API requests is:
-`https://api.teamflow.io/v1`
+`https://api.agentdesk.io/v1`
 
 ---
 
 ## Authentication
 
-Authentication is handled via **Bearer Tokens** (API Keys). All requests to the TeamFlow API must include an `Authorization` header containing a valid API key.
+Authentication is handled via **Bearer Tokens** (API Keys). All requests to the AgentDesk API must include an `Authorization` header containing a valid API key.
 
 ### Generating an API Key
 
-1. Log in to TeamFlow as an **Admin**.
+1. Log in to AgentDesk as an **Admin**.
 2. Navigate to **Settings → Developer → API Keys**.
 3. Click **Generate New Key**.
 4. Provide a descriptive name for the key (e.g., "Zapier Integration" or "Internal Dashboard").
@@ -34,7 +34,7 @@ Include the API key in the `Authorization` header of your HTTP requests:
 
 ```http
 GET /v1/users HTTP/1.1
-Host: api.teamflow.io
+Host: api.agentdesk.io
 Authorization: Bearer tf_live_xxxxxxxxxxxxxxxxxxxx
 Accept: application/json
 ```
@@ -51,7 +51,7 @@ If an API key is compromised, you can revoke it instantly:
 
 ## Rate Limits
 
-To ensure system stability and fair usage, the TeamFlow API enforces rate limits based on your subscription tier.
+To ensure system stability and fair usage, the AgentDesk API enforces rate limits based on your subscription tier.
 
 ### Limits by Plan
 

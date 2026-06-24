@@ -1,7 +1,7 @@
-# TeamFlow Backend
+# AgentDesk Backend
 
 ## Overview
-TeamFlow is a customer support backend built with FastAPI, PostgreSQL, `pgvector`, and a Markdown-based knowledge base with semantic search.
+AgentDesk is a customer support backend built with FastAPI, PostgreSQL, `pgvector`, and a Markdown-based knowledge base with semantic search.
 
 ## Project Structure
 ```text
@@ -24,14 +24,14 @@ backend/
 ```
 
 ## Integration with Frontend
-The backend is configured with `CORSMiddleware` in `app.py` to accept requests from the frontend at `http://localhost:3000` by default. You can override the allowed origins in production by setting the `ALLOWED_ORIGINS` environment variable (e.g. `ALLOWED_ORIGINS=https://app.teamflow.io,https://admin.teamflow.io`).
+The backend is configured with `CORSMiddleware` in `app.py` to accept requests from the frontend at `http://localhost:3000` by default. You can override the allowed origins in production by setting the `ALLOWED_ORIGINS` environment variable (e.g. `ALLOWED_ORIGINS=https://app.agentdesk.io,https://admin.agentdesk.io`).
 
 ## Setup & Run
 
 **1. Clone the repository**
 ```bash
 git clone <repository_url>
-cd TeamFlow/backend
+cd AgentDesk/backend
 ```
 
 **2. Create and activate a virtual environment**

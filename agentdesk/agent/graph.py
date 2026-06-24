@@ -1,5 +1,5 @@
 """
-graph.py — LangGraph ReAct agent for TeamFlow.
+graph.py — LangGraph ReAct agent for AgentDesk.
 
 Replaces the former intent-routing architecture (classify → rag | tools)
 with a single ReAct (Reason + Act) loop that can reason about whether to:

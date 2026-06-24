@@ -1,6 +1,6 @@
-# TeamFlow Frontend
+# AgentDesk Frontend
 
-This is the React + Vite frontend for TeamFlow, integrated directly with the FastAPI backend.
+This is the React + Vite frontend for AgentDesk, integrated directly with the FastAPI backend.
 
 ## Architecture & Integration
 
@@ -10,7 +10,7 @@ The frontend connects to the backend via a centralized API client (`src/api/clie
 
 ## Run Locally
 
-**Prerequisites:** Node.js, and the TeamFlow backend must be running on port 8000.
+**Prerequisites:** Node.js, and the AgentDesk backend must be running on port 8000.
 
 1. Ensure the backend is running (`uvicorn app:app --reload --port 8000` from the backend dir).
 2. Install dependencies:

@@ -1,6 +1,6 @@
-# TeamFlow API Examples
+# AgentDesk API Examples
 
-This document provides `curl` examples for interacting with the TeamFlow backend APIs. All examples assume the server is running locally on `http://127.0.0.1:8000`.
+This document provides `curl` examples for interacting with the AgentDesk backend APIs. All examples assume the server is running locally on `http://127.0.0.1:8000`.
 
 ---
 

@@ -1,5 +1,5 @@
 """
-jwt_utils.py — JWT creation and decoding for TeamFlow.
+jwt_utils.py — JWT creation and decoding for AgentDesk.
 
 Access token payload:
     {

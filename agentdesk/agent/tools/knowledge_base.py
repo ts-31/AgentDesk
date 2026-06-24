@@ -1,5 +1,5 @@
 """
-knowledge_base.py — LangChain tool for searching the TeamFlow knowledge base.
+knowledge_base.py — LangChain tool for searching the AgentDesk knowledge base.
 
 Wraps the existing rewrite → PgVectorRetriever pipeline behind a single
 @tool interface so the ReAct agent can call it on-demand, optionally
@@ -30,7 +30,7 @@ from search.retriever import PgVectorRetriever
 
 @tool
 def retrieve_kb(query: str, config: Annotated[RunnableConfig, InjectedToolArg]) -> str:
-    """Search the TeamFlow knowledge base for documentation, how-tos, feature
+    """Search the AgentDesk knowledge base for documentation, how-tos, feature
     explanations, API rate limits, subscription plans, billing policies, and
     support articles. Use this whenever the user asks about how the platform
     works, what a feature does, or what the policies are."""

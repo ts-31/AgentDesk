@@ -15,7 +15,7 @@ class Settings(BaseSettings):
 
     # JWT Authentication
     # Override jwt_secret_key in .env for production — never commit the real secret.
-    jwt_secret_key: str = "teamflow-dev-secret-change-in-production"
+    jwt_secret_key: str = "agentdesk-dev-secret-change-in-production"
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 1440   # 24 hours
     refresh_token_expire_days: int = 7

@@ -1,5 +1,5 @@
 """
-hashing.py — bcrypt password hashing and verification for TeamFlow.
+hashing.py — bcrypt password hashing and verification for AgentDesk.
 
 Uses passlib's CryptContext so the scheme can be upgraded in the future
 (e.g. argon2) without touching call sites.

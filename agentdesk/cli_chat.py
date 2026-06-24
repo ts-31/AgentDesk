@@ -1,5 +1,5 @@
 """
-cli_chat.py — TeamFlow CLI chatbot with JWT authentication.
+cli_chat.py — AgentDesk CLI chatbot with JWT authentication.
 
 Flow:
   1. Prompt for email and password on startup.
@@ -143,7 +143,7 @@ def _ask_agent(question: str, thread_id: str) -> dict | None:
 
 def main() -> None:
     print("=========================================")
-    print("🤖 Welcome to the TeamFlow CLI Chatbot!")
+    print("🤖 Welcome to the AgentDesk CLI Chatbot!")
     print("=========================================")
     print("Connecting to backend on http://localhost:8000...\n")
 
@@ -187,7 +187,7 @@ def main() -> None:
         if data is None:
             continue  # Error already printed by _ask_agent.
 
-        print(f"\nTeamFlow Agent: {data['answer']}")
+        print(f"\nAgentDesk Agent: {data['answer']}")
 
         if data.get("sources"):
             print(f"🔗 [Sources: {', '.join(data['sources'])}]")

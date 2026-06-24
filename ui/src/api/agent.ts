@@ -1,5 +1,5 @@
 /**
- * agent.ts — TeamFlow AI chat API.
+ * agent.ts — AgentDesk AI chat API.
  *
  * askAgent() → POST /agent/ask
  * Returns only the answer string; sources are intentionally discarded.
