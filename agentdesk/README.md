@@ -41,7 +41,21 @@ source .venv/Scripts/activate  # Windows Git Bash
 # or: .venv\Scripts\activate   # Windows PowerShell
 ```
 
-**3. Install dependencies**
+**3. Create environment variables**
+Create a `.env` file in the `agentdesk` directory:
+```env
+DATABASE_URL=postgresql://agentdesk:agentdesk_password@127.0.0.1:5433/agentdesk_db
+XAI_API_KEY=your_xai_api_key
+XAI_MODEL=grok-3
+RAG_SIMILARITY_THRESHOLD=0.70
+
+# Optional: LangSmith observability
+LANGSMITH_TRACING=true
+LANGSMITH_API_KEY=your_langsmith_api_key
+LANGSMITH_PROJECT=agentdesk
+```
+
+**4. Install dependencies**
 ```bash
 pip install -r requirements.txt
 ```

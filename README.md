@@ -10,6 +10,7 @@ A full-stack, production-grade agentic AI application. TeamFlow is an internal c
 - **RAG as a Tool** — Knowledge base retrieval (`retrieve_kb`) is just another tool available to the agent. It internally handles query rewriting for multi-turn follow-ups before hitting `pgvector`. The LLM can call it alongside CRM tools in the same turn.
 - **Live CRM Tool Calling** — The agent can look up customers, subscriptions, invoices, and tickets, and create new tickets in real time against a PostgreSQL database.
 - **Multi-Turn Conversational Memory** — Conversation state is persisted per `thread_id` using `langgraph-checkpoint-postgres`, enabling fully context-aware multi-turn chat.
+- **Zero-Code Observability** — Fully instrumented with **LangSmith** to provide production-grade telemetry. Every ReAct iteration, tool call, token count, and latency metric is automatically traced without polluting the agent logic.
 - **JWT Authentication** — Stateless access + refresh token flow (HS256). The agent's CRM tools are automatically scoped to the logged-in user's workspace via claims in the JWT — no user ID prompting needed.
 - **React Frontend** — Clean chat UI (Vite + React + TypeScript + Tailwind) with silent token refresh, session persistence, and a Vite dev proxy.
 
@@ -70,6 +71,7 @@ There is no intent classifier. The LLM receives a system prompt listing all avai
 | Component | Technology | Role |
 |---|---|---|
 | **Agent Orchestration** | [LangGraph](https://github.com/langchain-ai/langgraph) | Compiles and runs the stateful ReAct graph (`agent → tools → agent` loop) |
+| **Observability & Tracing** | [LangSmith](https://smith.langchain.com/) (`langsmith`) | Zero-code telemetry tracing every LLM reasoning step, tool invocation, token count, and latency metric in production |
 | **LLM Integration** | [LangChain-xAI](https://python.langchain.com/docs/integrations/providers/xai/) (`langchain-xai`) | Binds Grok to LangChain's tool-calling interface via `bind_tools()` |
 | **Tool & Prompt Abstractions** | [LangChain Core](https://python.langchain.com/docs/concepts/) (`langchain-core`) | `@tool` decorator, `ChatPromptTemplate`, `BaseMessage` types, `InjectedToolArg` |
 | **Conversation Memory** | [langgraph-checkpoint-postgres](https://langchain-ai.github.io/langgraph/concepts/persistence/) | Persists `AgentState` per `thread_id` in PostgreSQL for multi-turn memory |
@@ -111,12 +113,17 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-Create a `backend/.env` file:
+Create a `agentdesk/.env` file:
 ```env
 DATABASE_URL=postgresql://agentdesk:agentdesk_password@127.0.0.1:5433/agentdesk_db
 XAI_API_KEY=your_xai_api_key_here
 XAI_MODEL=grok-4.3
 RAG_SIMILARITY_THRESHOLD=0.70
+
+# Optional: LangSmith observability
+LANGSMITH_TRACING=true
+LANGSMITH_API_KEY=your_langsmith_api_key
+LANGSMITH_PROJECT=agentdesk
 ```
 
 Then start the server:

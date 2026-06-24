@@ -87,3 +87,19 @@ Multi-turn conversation memory is implemented using `langgraph-checkpoint-postgr
 4. **Stateless mode**: If no `thread_id` is provided, the graph is compiled without a checkpointer and runs fully statelessly.
 
 To prevent sources from prior turns bleeding into the current turn's response, `chain.py` snapshots the message count **before** `graph.invoke()` and slices only the new messages afterwards.
+
+---
+
+## 👁️ Observability & Tracing
+
+TeamFlow uses **LangSmith** for zero-code telemetry and execution tracing. 
+
+Because the agent is built natively on `langchain-core` and `langgraph`, LangSmith automatically intercepts and traces the entire ReAct loop without requiring explicit decorators or tracking code inside the agent logic.
+
+Traces capture:
+1. Every ReAct iteration (the reasoning loop).
+2. All LLM calls (both the ReAct reasoning and the internal query re-writer inside `retrieve_kb`), including exact prompts and generated completions.
+3. Every tool invocation with its inputs and raw database outputs.
+4. Token usage and latency per node.
+
+Tracing is enabled simply by providing the `LANGSMITH_TRACING=true` and `LANGSMITH_API_KEY` environment variables. The variables are injected into `os.environ` via `load_dotenv()` at server startup (`app.py`), allowing LangChain's internal hooks to detect them dynamically.
