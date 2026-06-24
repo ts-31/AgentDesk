@@ -13,6 +13,7 @@ langchain-core
 langchain-xai
 langgraph
 langgraph-checkpoint-postgres
+langsmith
 psycopg[binary,pool]
 # Auth — bcrypt pinned to <5 for passlib 1.7.x compatibility
 passlib[bcrypt]
